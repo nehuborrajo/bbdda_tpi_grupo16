@@ -1,0 +1,4 @@
+- Borrajo, Nehuen (alias: nehuborrajo)
+- Ferro, Nicolas Ariel (alias: nferro98)
+- Lopez, Leandro Nahuel (alias: lealopezz)
+- Zacarias, Franco Hernan (alias: Franncozaca)
