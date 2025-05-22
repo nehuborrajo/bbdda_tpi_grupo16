@@ -1,3 +1,5 @@
+--use master
+
 use Com5600G16
 go
 --CREO ESQUEMAS PARA SP
@@ -13,7 +15,7 @@ END;
 
 --CREO SP PARA INSERTAR SOCIOS (Inscripcion Individual)
 go
-create or alter procedure sp.InsertarSocio (@nombre varchar(50), @apellido varchar(50), @dni int, @email varchar(40), @fecha_nac date, @telefono varchar(20), @tel_contacto varchar(20), @obra_social varchar(30), @num_carnet_obra_social varchar(30), @nuevo_id int output)
+create or alter procedure sp.InsertarSocio (@nombre varchar(50), @apellido varchar(50), @dni int, @email varchar(40), @fecha_nac date, @telefono varchar(20), @tel_contacto varchar(20), @obra_social varchar(30), @num_carnet_obra_social varchar(30))
 as
 begin
 	IF NOT EXISTS (SELECT 1 FROM socios.Socio WHERE dni = @dni)
@@ -39,15 +41,15 @@ begin
 
 	
 	exec sp.CrearUsuario @dni, 'Socio', @id_usuario = @usuario_id OUTPUT
+
 	insert into socios.Socio (nombre, apellido, dni, email, fecha_nac, telefono, tel_contacto, obra_social, num_carnet_obra_social, membresia_id, usuario_id)
 	values (@nombre, @apellido, @dni, @email, @fecha_nac, @telefono, @tel_contacto, @obra_social,
 	@num_carnet_obra_social, @membresia_id, @usuario_id)
 
 	PRINT 'Socio agregado correctamente.';
 	end
-
 	else
-		RAISERROR('El DNI especificado ya existe en el sistema.', 16, 1);
+		RAISERROR('El DNI pertenece a un socio ya existente.', 16, 1);
 
 end
 
@@ -71,7 +73,7 @@ create or alter procedure sp.InsertarSocioFamiliar (@nombre varchar(50), @apelli
 as
 begin
 	declare @usuario_id int
-	declare responsable_id int
+	declare @familiar_id int
 	if not exists (select 1 from socios.Usuario where nombre_usuario = @dni)
 	begin
 		exec sp.CrearUsuario @dni, 'Socio', @id_usuario = @usuario_id OUTPUT
@@ -80,11 +82,69 @@ begin
 	begin
 		set @usuario_id = (select id from socios.Usuario where nombre_usuario = @dni)
 	end
-	insert into socios.Socio (nombre, apellido, dni, email, fecha_nac, telefono, parentesco, usuario_id) values (@nombre, @apellido, @dni, @email, @fecha_nac, @telefono, @parentesco, @usuario_id)
-	
-	exec sp.InsertarSocio @nombre_menor, @apellido_menor, @dni_menor, @fecha_nac_menor, @obra_social, @num_carnet_obra_social
 
-	insert into socios.Socio (nombre, apellido, dni, email, fecha_nac, telefono, parentesco, usuario_id) values (@nombre, @apellido, @dni, @email, @fecha_nac, @telefono, @parentesco, @usuario_id)
+	--inserto primero al menor
+	IF DATEDIFF(YEAR, @fecha_nac_menor, GETDATE()) < 18
+	begin
+		if not exists (select 1 from socios.Socio where dni = @dni_menor)
+		begin
+			--exec sp.InsertarSociorMenor @nombre_menor, @apellido_menor, @dni_menor, @email, @fecha_nac_menor, @telefono, @obra_social, @num_carnet_obra_social, id_responsable = responsable_id output
+			insert into socios.Socio (nombre, apellido, dni, email, fecha_nac, tel_contacto, obra_social, num_carnet_obra_social, es_menor) values (@nombre_menor, @apellido_menor, @dni_menor, @email, @fecha_nac_menor, @telefono, @obra_social, @num_carnet_obra_social, 1)
+			SET @familiar_id = SCOPE_IDENTITY()
+			if not exists (select 1 from socios.Socio where dni = @dni)
+			begin
+				insert into socios.Socio (nombre, apellido, dni, email, fecha_nac, telefono, es_responsable, parentesco, usuario_id) values (@nombre, @apellido, @dni, @email, @fecha_nac, @telefono, 1, @parentesco, @usuario_id)
+				SET @familiar_id = SCOPE_IDENTITY()
+				update socios.Socio
+					set id_responsable = @familiar_id
+					where dni = @dni_menor
+			end
+			else
+			begin
+				set @familiar_id = (select numero_socio from socios.Socio where dni = @dni)
+				update socios.Socio
+					set id_responsable = @familiar_id
+					where dni = @dni_menor
+			end
+		end
+		else
+			RAISERROR('El DNI del menor ya se encuentra en el sistema.', 16, 1); 
+	end
+		else
+			RAISERROR('Error. El "menor" a asociar ya es mayor de edad.', 16, 1); 
+
+end
+
+--SP para asociar Responsable por DNI
+go
+create or alter procedure sp.AsociarResponsable (@dni int)
+as
+begin
+	IF EXISTS (SELECT 1 FROM socios.Socio WHERE dni = @dni and es_responsable = 1 and responsable_y_socio = 0)
+	begin
+	update socios.Socio
+		set responsable_y_socio = 1
+		where dni = @dni
+	print 'DNI correspondiente a responsable no socio. Fue asociado correctamente.'
+	end
+	else
+		RAISERROR('El DNI no existe en el sistema o ya pertenece a un socio ya existente.', 16, 1);
+end
+
+--SP para desasociar Responsable por DNI
+go
+create or alter procedure sp.DesasociarResponsable (@dni int)
+as
+begin
+	IF EXISTS (SELECT 1 FROM socios.Socio WHERE dni = @dni and es_responsable = 1 and responsable_y_socio = 1)
+	begin
+	update socios.Socio
+		set responsable_y_socio = 0
+		where dni = @dni
+	print 'DNI correspondiente a responsable socio. Fue desasociado correctamente.'
+	end
+	else
+		RAISERROR('El DNI no existe en el sistema o ya pertenece a un no socio ya existente.', 16, 1);
 end
 
 
