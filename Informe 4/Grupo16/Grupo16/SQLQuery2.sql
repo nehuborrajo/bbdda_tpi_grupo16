@@ -30,21 +30,21 @@ begin
 		SET @edad = @edad - 1;
 	-- Asignar categoría según la edad
 	SET @categoria = CASE 
-		WHEN @edad <= 12 THEN 'Menor'
-		WHEN @edad BETWEEN 13 AND 17 THEN 'Cadete'
-		ELSE 'Mayor'
+		WHEN @edad <= 12 THEN (select id from socios.Membresia where nombre = 'Menor')
+		WHEN @edad BETWEEN 13 AND 17 THEN (select id from socios.Membresia where nombre = 'Cadete')
+		ELSE (select id from socios.Membresia where nombre = 'Mayor')
 	END;
 
 	declare @membresia_id int
 	set @membresia_id = (select m.id from socios.Membresia m
-						where m.nombre like @categoria)
+						where m.id like @edad)
 
 	
-	exec sp.CrearUsuario @dni, 'Socio', @id_usuario = @usuario_id OUTPUT
+	exec sp.CrearUsuarioNuevo @dni, 'Socio', @id_usuario = @usuario_id OUTPUT
 
 	insert into socios.Socio (nombre, apellido, dni, email, fecha_nac, telefono, tel_contacto, obra_social, num_carnet_obra_social, membresia_id, usuario_id)
 	values (@nombre, @apellido, @dni, @email, @fecha_nac, @telefono, @tel_contacto, @obra_social,
-	@num_carnet_obra_social, @membresia_id, @usuario_id)
+	@num_carnet_obra_social, @categoria, @usuario_id)
 
 	PRINT 'Socio agregado correctamente.';
 	end
@@ -55,16 +55,44 @@ end
 
 --SP para crear usuario a partir de un nuevo dni de socio
 go
-create or alter procedure sp.CrearUsuario (@dni int, @rol varchar(15), @id_usuario int output)
+create or alter procedure sp.CrearUsuarioNuevo (@dni int, @rol varchar(15))
 as
 begin
 	SET NOCOUNT ON;
-	declare @fecha_cad date
-	set @fecha_cad = DATEADD(YEAR, 1, GETDATE());
-	insert into socios.Usuario values (@dni, @dni, @rol, @fecha_cad)
-	SET @id_usuario = SCOPE_IDENTITY()
+	if not exists (select 1 from socios.Usuario where nombre_usuario = @dni)
+	begin
+		declare @fecha_cad date
+		set @fecha_cad = DATEADD(YEAR, 1, GETDATE());
+		insert into socios.Usuario values (@dni, @dni, @rol, @fecha_cad)
+	end
+	else
+		RAISERROR('El DNI ya esta asociado a un usuario existente.', 16, 1);
 end
 
+--SP para crear nuevo usuario a socio existente
+go
+create or alter procedure sp.CrearUsuarioSocio (@dni int, @rol varchar(20))
+as
+begin
+	if exists (select 1 from socios.Socio where dni = @dni and activo=1 and usuario_id is NULL)
+	begin
+		if not exists (select 1 from socios.Usuario where nombre_usuario = @dni)
+		begin
+			declare @fecha_cad date
+			declare @usuario_id int
+			set @fecha_cad = DATEADD(YEAR, 1, GETDATE());
+			insert into socios.Usuario values (@dni, @dni, @rol, @fecha_cad)
+			SET @usuario_id = SCOPE_IDENTITY()
+			update socios.Socio	
+				set usuario_id = @usuario_id
+				where dni = @dni
+		end
+		else
+			RAISERROR('El DNI pertene a un socio con usuario.', 16, 1);
+	end
+	else
+		RAISERROR('El DNI no pertenece a un socio activo o ya tiene un usuario asociado.', 16, 1);
+end
 
 --CREO SP PARA INSERTAR Grupo Familiar (Inscripcion Familiar)
 go
@@ -88,8 +116,21 @@ begin
 	begin
 		if not exists (select 1 from socios.Socio where dni = @dni_menor)
 		begin
-			--exec sp.InsertarSociorMenor @nombre_menor, @apellido_menor, @dni_menor, @email, @fecha_nac_menor, @telefono, @obra_social, @num_carnet_obra_social, id_responsable = responsable_id output
-			insert into socios.Socio (nombre, apellido, dni, email, fecha_nac, tel_contacto, obra_social, num_carnet_obra_social, es_menor) values (@nombre_menor, @apellido_menor, @dni_menor, @email, @fecha_nac_menor, @telefono, @obra_social, @num_carnet_obra_social, 1)
+			DECLARE @edad INT;
+			DECLARE @membresia VARCHAR(10);
+			-- Calcular edad exacta
+			SET @edad = DATEDIFF(YEAR, @fecha_nac_menor, GETDATE());
+			-- Ajustar edad si aún no cumplió años este año
+			IF (DATEADD(YEAR, @edad, @fecha_nac_menor) > GETDATE())
+				SET @edad = @edad - 1;
+			-- Asignar categoría según la edad
+			SET @membresia = CASE 
+				WHEN @edad <= 12 THEN (select id from socios.Membresia where nombre = 'Menor')
+				WHEN @edad BETWEEN 13 AND 17 THEN (select id from socios.Membresia where nombre = 'Cadete')
+				ELSE (select id from socios.Membresia where nombre = 'Mayor')
+			END;
+
+			insert into socios.Socio (nombre, apellido, dni, email, fecha_nac, tel_contacto, obra_social, num_carnet_obra_social, es_menor, membresia_id) values (@nombre_menor, @apellido_menor, @dni_menor, @email, @fecha_nac_menor, @telefono, @obra_social, @num_carnet_obra_social, 1, @membresia)
 			SET @familiar_id = SCOPE_IDENTITY()
 			if not exists (select 1 from socios.Socio where dni = @dni)
 			begin
@@ -123,7 +164,7 @@ begin
 	IF EXISTS (SELECT 1 FROM socios.Socio WHERE dni = @dni and es_responsable = 1 and responsable_y_socio = 0)
 	begin
 	update socios.Socio
-		set responsable_y_socio = 1
+		set responsable_y_socio = 1, membresia_id = (select id from socios.Membresia where nombre = 'Mayor')
 		where dni = @dni
 	print 'DNI correspondiente a responsable no socio. Fue asociado correctamente.'
 	end
@@ -292,4 +333,42 @@ begin
 	end
 	else
 		RAISERROR('La actividad especificada no existe.', 16, 1);
+end
+
+--SP para actualizar contrasenia de usuario a partir del DNI (nombre_usuario)
+go
+create or alter procedure sp.ActualizarContraseniaUsuario (@dni int, @nueva_contra varchar(20))
+as
+begin
+	if exists (select 1 from socios.Usuario where nombre_usuario = @dni)
+	begin
+		update socios.Usuario
+			set contrasenia = @nueva_contra, fecha_vigencia_contra = DATEADD(YEAR, 1, GETDATE())
+			where nombre_usuario = @dni
+			print 'Contrasenia actualizada correctamente.'
+	end
+	else
+		RAISERROR('El DNI especificado no esta asociado a ningun usuario.', 16, 1);
+end
+
+--SP para eliminar usuarios a partir del DNI (nombre_usuario)
+go
+create or alter procedure sp.EliminarUsuario (@dni int)
+as
+begin
+	if exists (select 1 from socios.Usuario where nombre_usuario = @dni)
+	begin
+		IF exists (select 1 from socios.Socio where dni = @dni and activo = 0)
+		begin
+			update socios.Socio
+				set usuario_id = NULL
+				where dni = @dni
+			delete from socios.Usuario where nombre_usuario = @dni
+			print 'Usuario eliminado correctamente.'
+		end
+		else
+			RAISERROR('El DNI especificado esta asociado a un socio Activo.', 16, 1);
+	end
+	else
+		RAISERROR('El DNI especificado no esta asociado a ningun usuario.', 16, 1);
 end

@@ -51,7 +51,7 @@ BEGIN
     create table socios.Usuario (
 		id int identity primary key,
 		nombre_usuario int,
-		contrasenia int,
+		contrasenia varchar(20),
 		rol varchar(15) not null check (rol in ('Socio', 'Administrador')),
 		fecha_vigencia_contra date
 	);
@@ -92,10 +92,12 @@ BEGIN
 		tel_contacto varchar(20) check (tel_contacto like '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'), --verifica que sea formato xx-xxxxxxxx,
 		obra_social varchar(30),
 		num_carnet_obra_social varchar(30),
-		activo bit default 1,
-		responsable_y_socio bit default 0,
+		activo bit not null default 1,
+		es_menor bit not null default 0,
+		es_responsable bit not null default 0,
+		responsable_y_socio bit not null default 0,
 		parentesco varchar(15),
-		id_familiar int references socios.Socio(numero_socio),
+		id_responsable int references socios.Socio(numero_socio),
 		membresia_id int references socios.Membresia(id),
 		usuario_id int references socios.Usuario(id)
 	);
@@ -177,14 +179,14 @@ IF NOT EXISTS (
 BEGIN
     create table finanzas.Factura (
 		numero_factura int check (numero_factura like '[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'),
-		id_cuota int,
+		id_cuota int null,
 		id_socio int,
 		valor float not null,
 		fecha_emision date not null,
 		fecha_vencimiento date not null,
 		estado varchar(10) not null check (estado in ('Pendiente', 'Pagada', 'Vencida')),
 		detalle varchar(100) not null,
-		primary key(numero_factura, id_cuota, id_socio),
+		primary key(numero_factura),
 		foreign key (id_cuota, id_socio) references finanzas.Cuota(id, id_socio)
 	);
 END;
