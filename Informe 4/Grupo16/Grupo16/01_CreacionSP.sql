@@ -531,7 +531,7 @@ end
 
 --sp para generar una factura a partir de un cuota id
 go
-create or alter procedure sp.GenerarFacturaCuota (@id_cuota int)
+create or alter procedure sp.GenerarFacturaCuota (@id_cuota int, @descAct bit, @descMemb bit, @acumAct float, @acumMem float)
 as
 begin
 	if not exists (select 1 from finanzas.Cuota where id = @id_cuota)
@@ -548,16 +548,35 @@ begin
 	declare @id_socio int
 	declare @valor float
 	declare @fecha_venc date
+	declare @detalleAct varchar(80)
+	declare @detalleMem varchar(80)
+	declare @detalle varchar(160)
+	declare @desc float
 
 	SELECT 
 			@id_socio = id_socio,
 			@valor = valor
 		FROM finanzas.Cuota
 		WHERE id = @id_cuota
+	
+	set @detalleAct = 'Valor actividades: ' + cast(@acumAct as varchar) + CHAR(13) + CHAR(10)
+	if(@descAct=1)
+	begin
+		set @desc = ((@acumAct*100)/90) - @acumAct
+		set @detalleAct = @detalleAct + '(Descuento Actividades: ' + cast(@desc as varchar) +')' + CHAR(13) + CHAR(10)
+	end
+
+	set @detalleMem = 'Valor Membresia: ' + cast(@acumMem as varchar)  + CHAR(13) + CHAR(10)
+	if(@descMemb=1)
+	begin
+		set @desc = ((@acumMem*100)/85) - @acumMem
+		set @detalleMem= @detalleMem + '(Descuento Membresia: ' + cast(@desc as varchar) + ')'
+	end
+	set @detalle = @detalleAct + @detalleMem
 
 	set @fecha_venc = DATEADD(DAY, 5, GETDATE());
 
-	insert into finanzas.Factura (id_cuota, id_socio, valor, fecha_emision, fecha_vencimiento, estado, detalle) values (@id_cuota, @id_socio, @valor, GETDATE(), @fecha_venc, 'Pendiente', 'Cuota')
+	insert into finanzas.Factura (id_cuota, id_socio, valor, fecha_emision, fecha_vencimiento, estado, origen, detalle) values (@id_cuota, @id_socio, @valor, GETDATE(), @fecha_venc, 'Pendiente', 'Cuota', @detalle)
 	print 'Factura generada correctamente'
 end
 
@@ -592,6 +611,10 @@ begin
 			declare @acum_mem float
 			declare @acum float
 			declare @id_cuota int
+			declare @tieneDescActividad bit
+			declare @tieneDescMembresia bit
+			set @tieneDescActividad = 0
+			set @tieneDescMembresia = 0
 			
 			set @fecha = GETDATE()
 			--set @periodo = FORMAT(GETDATE(), 'MM-yyyy')
@@ -611,6 +634,7 @@ begin
 				if ((select count(*) from eventos.SocioActividad where id_socio = @id_socio) > 1)
 				begin	
 					set @acum_act *= 0.90
+					set @tieneDescActividad = 1
 				end
 			end
 			else
@@ -622,13 +646,14 @@ begin
 			if ((@id_fami is not null) or (@responsable_y_socio=1))
 			begin	
 				set @acum_mem  *= 0.85
+				set @tieneDescMembresia = 1
 			end
 
 			set @acum = @acum_act + @acum_mem
 
 			insert into finanzas.Cuota (id_socio, id_responsable, valor, fecha, periodo, estado) values (@id_socio, NULL, @acum, @fecha, @periodo, 'Pendiente')
 			set @id_cuota = SCOPE_IDENTITY()
-			exec sp.GenerarFacturaCuota @id_cuota
+			exec sp.GenerarFacturaCuota @id_cuota, @tieneDescActividad, @tieneDescMembresia, @acum_act, @acum_mem
 			print 'Cuota generada correctamente.'
 		end
 		else if (@es_responsable = 0 and @id_fami is not null)
@@ -657,6 +682,7 @@ begin
 				if ((select count(*) from eventos.SocioActividad where id_socio = @id_socio) > 1)
 				begin	
 					set @acum_act2 *= 0.90
+					set @tieneDescActividad = 1
 				end
 			end
 			else
@@ -666,13 +692,14 @@ begin
 
 			set @acum_mem2 = (select m.costo from socios.Membresia m where id = @id_mem)
 			set @acum_mem2  *= 0.85
+			set @tieneDescMembresia = 1
 			set @acum2 = @acum_act2 + @acum_mem2
 			
 
 			insert into finanzas.Cuota values (@id_socio, @id_fami, @acum2, @fecha2, @periodo, 'Pendiente')		
 			
 			set @id_cuota = SCOPE_IDENTITY()
-			exec sp.GenerarFacturaCuota @id_cuota
+			exec sp.GenerarFacturaCuota @id_cuota, @tieneDescActividad, @tieneDescMembresia, @acum_act2, @acum_mem2
 			print 'Cuota generada correctamente.'
 		end
 		else
@@ -788,16 +815,32 @@ end
 
 --sp para generar factura por reserva
 go
-create or alter procedure sp.GenerarFacturaReserva (@id_socio int, @id_invitado int, @fecha date, @valor float, @valor_inv float, @id_reserva int)
+create or alter procedure sp.GenerarFacturaReserva (@id_socio int, @id_invitado int, @fecha date, @valor float, @valor_inv float, @id_reserva int, @llovio bit)
 as
 begin
 	declare @fecha_venc date
+	declare @detalle varchar(160)
+	declare @desc float
 	SET @fecha_venc = DATEADD(DAY, 5, GETDATE());
-	insert into finanzas.Factura (id_socio, id_reserva, valor, fecha_emision, fecha_vencimiento, estado, detalle) values (@id_socio, @id_reserva, @valor,GETDATE(), @fecha_venc, 'Pendiente', 'Reserva')
+	set @detalle = 'Valor Reserva: ' + cast(@valor as varchar)
+	if(@llovio = 1)
+	begin
+		set @desc = ((@valor*60)/100)
+		set @detalle = @detalle + CHAR(13) + CHAR(10) + '(Reeintegro por lluvia: ' + cast(@desc as varchar) + ')'
+	end
+
+	insert into finanzas.Factura (id_socio, id_reserva, valor, fecha_emision, fecha_vencimiento, estado, origen, detalle) values (@id_socio, @id_reserva, @valor,GETDATE(), @fecha_venc, 'Pendiente', 'Reserva', @detalle)
 
 	if @id_invitado is not null
-			insert into finanzas.Factura (id_invitado, id_reserva, valor, fecha_emision, fecha_vencimiento, estado, detalle) values (@id_invitado, @id_reserva, @valor_inv,GETDATE(), @fecha_venc, 'Pendiente', 'Reserva')
-
+	begin
+			set @detalle = 'Valor Reserva (invitado): ' + cast(@valor_inv as varchar)
+			if(@llovio = 1)
+			begin
+				set @desc = ((@valor_inv*60)/100)
+				set @detalle = @detalle + CHAR(13) + CHAR(10) + '(Reeintegro por lluvia: ' + cast(@desc as varchar) + ')'
+			end
+			insert into finanzas.Factura (id_invitado, id_reserva, valor, fecha_emision, fecha_vencimiento, estado, origen, detalle) values (@id_invitado, @id_reserva, @valor_inv,GETDATE(), @fecha_venc, 'Pendiente', 'Reserva', @detalle)
+	end
 end
 
 --SP para generar Reserva a partir dni socio, dni invitado(op), id act, fecha y si llovio (1/0)
@@ -849,7 +892,7 @@ begin
 	print @id_act
 	insert into eventos.Reserva (id_socio, id_invitado, id_actividad, fecha, lluvia) values (@id_socio, @id_invitado, @id_act, @fecha, @llovio)
 	set @id_reserva = SCOPE_IDENTITY()
-	exec sp.GenerarFacturaReserva @id_socio, @id_invitado, @fecha, @valor, @valor_inv, @id_reserva
+	exec sp.GenerarFacturaReserva @id_socio, @id_invitado, @fecha, @valor, @valor_inv, @id_reserva, @llovio
 	
 	
 	if @llovio = 1
