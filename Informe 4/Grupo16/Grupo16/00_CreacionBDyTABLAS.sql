@@ -160,6 +160,18 @@ BEGIN
 END;
 
 ------------------------------------------------------------------------------
+IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.TABLES 
+    WHERE TABLE_SCHEMA = 'eventos' AND TABLE_NAME = 'Profesor'
+)
+BEGIN
+    create table eventos.Profesor (
+		id int identity primary key,
+		nombre varchar(50) not null
+	);
+END;
+
+------------------------------------------------------------------------------
 
 --tabla de relacion entre socio y actividad
 IF NOT EXISTS (
@@ -177,7 +189,27 @@ BEGIN
 END;
 
 ------------------------------------------------------------------------------
+--tabla relacion Socio-Profesor-Actividad
 
+IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.TABLES 
+    WHERE TABLE_SCHEMA = 'eventos' AND TABLE_NAME = 'Clase'
+)
+BEGIN
+    CREATE TABLE eventos.Clase (
+        id_socio INT NOT NULL,
+        id_actividad INT NOT NULL,
+		id_profesor int not null,
+		fecha date not null,
+		asistencia char(1) check (asistencia in ('P', 'A', 'J')),
+        PRIMARY KEY (id_socio, id_actividad),
+        FOREIGN KEY (id_socio) REFERENCES socios.Socio(numero_socio),
+        FOREIGN KEY (id_actividad) REFERENCES eventos.Actividad(id),
+		foreign key (id_profesor) references eventos.Profesor(id)
+    );
+END;
+
+------------------------------------------------------------------------------
 IF NOT EXISTS (
     SELECT * FROM INFORMATION_SCHEMA.TABLES 
     WHERE TABLE_SCHEMA = 'eventos' AND TABLE_NAME = 'Invitado'
@@ -239,6 +271,22 @@ BEGIN
 	);
 END;
 
+------------------------------------------------------------------------------
+IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.TABLES 
+    WHERE TABLE_SCHEMA = 'eventos' AND TABLE_NAME = 'Clima'
+)
+BEGIN
+		CREATE TABLE eventos.Clima (
+		fecha_hora varchar(30) primary key not null,
+		temperatura FLOAT,
+		lluvia_mm FLOAT,
+		humedad INT,
+		viento_kmh VARCHAR(20)
+		);
+END;
+
+--drop table eventos.Clima
 ------------------------------------------------------------------------------
 IF NOT EXISTS (
     SELECT * FROM INFORMATION_SCHEMA.TABLES 

@@ -54,6 +54,26 @@ END;
 
 --CREACION DE SP's--
 
+--SP para crear profesor
+go
+create or alter procedure sp.CrearProfesor (@nombre varchar(50))
+as
+begin
+	insert into eventos.Profesor (nombre) values (@nombre)
+end
+
+--SP para eliminar profesor por ID
+go
+create or alter procedure sp.EliminarProfesor (@id int)
+as
+begin
+	if exists (select 1 from eventos.Profesor where id = @id)
+		delete from eventos.Profesor where id = @id
+	else
+		RAISERROR('El ID no existe.', 16, 1);
+end
+
+
 --SP para crear usuario a partir de un nuevo dni de socio
 go
 create or alter procedure sp.CrearUsuarioNuevo (@dni int, @rol varchar(15), @id_usuario int output)
@@ -843,9 +863,9 @@ begin
 	end
 end
 
---SP para generar Reserva a partir dni socio, dni invitado(op), id act, fecha y si llovio (1/0)
+--SP para generar Reserva a partir dni socio, dni invitado(op), id act, fecha
 go
-create or alter procedure sp.CrearReserva (@dni_socio int, @dni_invitado int, @id_act int, @fecha date, @llovio bit)
+create or alter procedure sp.CrearReserva (@dni_socio int, @dni_invitado int, @id_act int, @fecha date)
 as
 begin
 	if not exists (select 1 from socios.Socio where dni = @dni_socio and activo=1 and responsable_y_socio = 0)
@@ -871,6 +891,17 @@ begin
 
 	declare @valor float
 	declare @valor_inv float
+	declare @llovio bit
+
+	IF EXISTS (
+    SELECT 1
+    FROM eventos.Clima
+    WHERE lluvia_mm > 0
+      AND CAST(fecha_hora AS DATE) = @fecha
+) 
+	set @llovio=1
+	else
+		set @llovio=0
 		
 	set @valor = (select a.costo from eventos.Actividad a where id = @id_act)
 	set @valor_inv = (select a.costo from eventos.Actividad a where nombre = 'Pileta Invitado')
@@ -1195,4 +1226,143 @@ begin
       AND f.estado = 'Vencida'
 	);
 end
+
+
+--SP para importar OpenMeteo 2024
+go
+create or alter procedure sp.ImportarMeteo24
+as
+begin	
+	IF OBJECT_ID('tempdb..#climaTemp') IS NOT NULL
+    DROP TABLE #climaTemp;
+
+	--creo una tabla temporal
+	create table #climaTemp (
+	fecha_hora varchar(30),
+	temperatura NVARCHAR(50),
+	lluvia_mm NVARCHAR(50),
+	humedad NVARCHAR(50),
+	viento_kmh NVARCHAR(50)
+	);--drop table #climaTemp
+
+	-- Importo el archivo CSV, omitiendo las 4 primeras filas
+	BULK INSERT #climaTemp
+	--FROM 'C:\Users\I759578\Documents\Importar\open-meteo-buenosaires_2024.csv'
+	FROM 'C:\Users\I759578\Documents\TPI-2025-1C\open-meteo-buenosaires_2024.csv'
+	WITH (
+		FIRSTROW = 4,                  -- Salta las 4 primeras filas (no cuenta la vacia)
+		FIELDTERMINATOR = ',',
+		ROWTERMINATOR = '\n',
+		CODEPAGE = '65001',
+		MAXERRORS = 1000
+	);
+
+	--casteo la columna viento, sacando los ';'
+	UPDATE #climaTemp
+	SET viento_kmh = 
+		CASE 
+			WHEN CHARINDEX(';', viento_kmh) > 0 
+			THEN LEFT(viento_kmh, CHARINDEX(';', viento_kmh) - 1)
+			ELSE viento_kmh
+		END;
+
+	--casteo el datetime agregando segundos (00) para que sea compatible el formato
+	UPDATE #climaTemp
+	SET fecha_hora = fecha_hora + ':00'
+	WHERE fecha_hora IS NOT NULL AND LEN(fecha_hora) = 16;
+
+	-- Castear y guardar en temp con tipos correctos
+	SELECT
+		TRY_CAST(fecha_hora AS DATETIME2) AS fecha_hora,
+		TRY_CAST(temperatura AS FLOAT) AS temperatura,
+		TRY_CAST(lluvia_mm AS FLOAT) AS lluvia_mm,
+		TRY_CAST(humedad AS INT) AS humedad,
+		TRY_CAST(viento_kmh AS FLOAT) AS viento_kmh
+	INTO #climaCasteado
+	FROM #climaTemp;
+
+	-- Insertar desde tabla con datos casteados y filtrados
+	INSERT INTO eventos.Clima (fecha_hora, temperatura, lluvia_mm, humedad, viento_kmh)
+	SELECT c.fecha_hora, c.temperatura, c.lluvia_mm, c.humedad, c.viento_kmh
+	FROM #climaCasteado c
+	WHERE c.fecha_hora IS NOT NULL
+	  AND NOT EXISTS (
+		SELECT 1 FROM eventos.Clima cl
+		WHERE cl.fecha_hora = c.fecha_hora
+	  );
+
+	print 'Importado correctamente.'
+end
+
+--SP para importar OpenMeteo 2025
+go
+create or alter procedure sp.ImportarMeteo25
+as
+begin
+	IF OBJECT_ID('tempdb..#climaTemp') IS NOT NULL
+    DROP TABLE #climaTemp;
+	
+	--creo una tabla temporal
+	create table #climaTemp (
+	fecha_hora varchar(30),
+	temperatura NVARCHAR(50),
+	lluvia_mm NVARCHAR(50),
+	humedad NVARCHAR(50),
+	viento_kmh NVARCHAR(50)
+	);--drop table #climaTemp
+
+	-- Importo el archivo CSV, omitiendo las 4 primeras filas
+	BULK INSERT #climaTemp
+	--FROM 'C:\Users\I759578\Documents\Importar\open-meteo-buenosaires_2024.csv'
+	FROM 'C:\Users\I759578\Documents\TPI-2025-1C\open-meteo-buenosaires_2025.csv'
+	WITH (
+		FIRSTROW = 4,                  -- Salta las 4 primeras filas (no cuenta la vacia)
+		FIELDTERMINATOR = ',',
+		ROWTERMINATOR = '\n',
+		CODEPAGE = '65001',
+		MAXERRORS = 1000
+	);
+
+	--casteo la columna viento, sacando los ';'
+	UPDATE #climaTemp
+	SET viento_kmh = 
+		CASE 
+			WHEN CHARINDEX(';', viento_kmh) > 0 
+			THEN LEFT(viento_kmh, CHARINDEX(';', viento_kmh) - 1)
+			ELSE viento_kmh
+		END;
+
+	--casteo el datetime agregando segundos (00) para que sea compatible el formato
+	UPDATE #climaTemp
+	SET fecha_hora = fecha_hora + ':00'
+	WHERE fecha_hora IS NOT NULL AND LEN(fecha_hora) = 16;
+
+	-- Casteo y guardar en temp con tipos correctos
+	SELECT
+		TRY_CAST(fecha_hora AS DATETIME2) AS fecha_hora,
+		TRY_CAST(temperatura AS FLOAT) AS temperatura,
+		TRY_CAST(lluvia_mm AS FLOAT) AS lluvia_mm,
+		TRY_CAST(humedad AS INT) AS humedad,
+		TRY_CAST(viento_kmh AS FLOAT) AS viento_kmh
+	INTO #climaCasteado
+	FROM #climaTemp;
+
+	-- Insertar desde tabla con datos casteados y filtrados
+	INSERT INTO eventos.Clima (fecha_hora, temperatura, lluvia_mm, humedad, viento_kmh)
+	SELECT c.fecha_hora, c.temperatura, c.lluvia_mm, c.humedad, c.viento_kmh
+	FROM #climaCasteado c
+	WHERE c.fecha_hora IS NOT NULL
+	  AND NOT EXISTS (
+		SELECT 1 FROM eventos.Clima cl
+		WHERE cl.fecha_hora = c.fecha_hora
+	  );
+		
+	print 'Importado correctamente.'
+end
+
+select * from #climaTemp
+select * from eventos.Clima
+delete from eventos.Clima
+exec sp.ImportarMeteo24
+exec sp.ImportarMeteo25
 

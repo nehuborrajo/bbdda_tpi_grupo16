@@ -524,3 +524,6 @@ exec sp.ActualizarFacturas
 --Desactivar socios morosos
 exec sp.DesactivarSociosMorosos
 
+exec sp.ImportarMeteo24
+
+select * from eventos.Clima
