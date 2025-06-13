@@ -1635,9 +1635,6 @@ ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_contacto VARCHAR(20);
     FROM #GrupoFamiliarTemp T
     JOIN socios.Socio S ON T.numero_socio = S.numero_socio;
 	--------------------------
-		UPDATE #GrupoFamiliarTemp
-SET numero_socio_asociado = 1
-WHERE numero_socio = 4121;
 
 
 	-------------
