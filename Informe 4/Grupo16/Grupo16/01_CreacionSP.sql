@@ -1539,21 +1539,17 @@ GO
 
 ----------------------------------------------------------------------------------------------------
 
-drop PROCEDURE socios.sp_importar_responsables_pago
-delete from socios.Socio where numero_socio>8
-select * from socios.Socio
-EXEC socios.sp_importar_responsables_pago
-    @ruta_excel = N'C:\Users\zacar\Documents\tpbdda\TPI-2025-1C\Datos socios.xlsx';
+
+--EXEC socios.sp_importar_responsables_pago
+   -- @ruta_excel = N'C:\Users\zacar\Documents\tpbdda\TPI-2025-1C\Datos socios.xlsx';
 
 
 
-------------------------------------------------------------------------------------------------------
-ALTER TABLE socios.Socio
-ALTER COLUMN email VARCHAR(100) NULL;
+
 
 -------------------------------------------------------------------------------------------------------------
 --sp importar  grupo familiar
-
+go
 CREATE OR ALTER PROCEDURE socios.sp_importar_grupo_familiar
     @ruta_excel NVARCHAR(260)
 AS
@@ -1635,6 +1631,9 @@ ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_contacto VARCHAR(20);
     FROM #GrupoFamiliarTemp T
     JOIN socios.Socio S ON T.numero_socio = S.numero_socio;
 	--------------------------
+		UPDATE #GrupoFamiliarTemp
+SET numero_socio_asociado = 1
+WHERE numero_socio = 4121;
 
 
 	-------------
@@ -1687,13 +1686,148 @@ GO
 
 -----------------------------------------------------------------------------------------
 
-EXEC socios.sp_importar_grupo_familiar
-    @ruta_excel = N'C:\Users\zacar\Documents\tpbdda\TPI-2025-1C\Datos socios.xlsx';
+--EXEC socios.sp_importar_grupo_familiar
+   -- @ruta_excel = N'C:\Users\zacar\Documents\tpbdda\TPI-2025-1C\Datos socios.xlsx';
 
 
 
 --------------------------------------------------------------------------------------------
 
+--sp pago cuotas
+go
+CREATE OR ALTER PROCEDURE socios.sp_importar_grupo_familiar
+    @ruta_excel NVARCHAR(260)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- 1. Tabla temporal
+    IF OBJECT_ID('tempdb..#GrupoFamiliarTemp') IS NOT NULL
+        DROP TABLE #GrupoFamiliarTemp;
+
+    CREATE TABLE #GrupoFamiliarTemp (
+            numero_socio               VARCHAR(20),
+		    numero_socio_asociado      VARCHAR(20),
+            nombre                     VARCHAR(50),
+            apellido                   VARCHAR(50),
+            dni                        INT not null,
+            email                      VARCHAR(100),
+            fecha_nacimiento           DATETIME,
+            telefono_contacto          INT,
+            telefono_emergencia        INT,
+            obra_social                VARCHAR(50),
+            numero_socio_obra_social   VARCHAR(20),
+            telefono_emergencia_obrasocial VARCHAR(50)
+    );
+
+    -- 2. Importar desde Excel
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = '
+        INSERT INTO #GrupoFamiliarTemp
+        SELECT *
+        FROM OPENROWSET(
+            ''Microsoft.ACE.OLEDB.16.0'',
+            ''Excel 12.0;HDR=YES;Database=' + @ruta_excel + ''',
+            ''SELECT * FROM [Grupo Familiar$]''
+        );';
+    EXEC sp_executesql @sql;
+
+    -- 3. Normalizar teléfonos y numero de socio
+ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_contacto VARCHAR(20);
+		UPDATE #GrupoFamiliarTemp
+		SET telefono_contacto = STUFF(CAST(telefono_contacto AS VARCHAR(10)), 3, 0, '-')
+		WHERE telefono_contacto BETWEEN 1000000000 AND 9999999999;
+
+
+		ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_emergencia VARCHAR(20);
+		UPDATE #GrupoFamiliarTemp
+		SET telefono_emergencia = STUFF(CAST(telefono_emergencia AS VARCHAR(10)), 3, 0, '-')
+		WHERE telefono_emergencia BETWEEN 1000000000 AND 9999999999;
+
+   	UPDATE #GrupoFamiliarTemp
+		SET numero_socio = CAST(
+		SUBSTRING(CAST(numero_socio AS VARCHAR(20)), 4, 
+		LEN(CAST(numero_socio AS VARCHAR(20)))
+		) AS INT)
+		WHERE CAST(numero_socio AS VARCHAR(20)) LIKE 'SN-%';
+
+			UPDATE #GrupoFamiliarTemp
+		SET numero_socio_asociado = CAST(
+		SUBSTRING(CAST(numero_socio_asociado AS VARCHAR(20)), 4, 
+		LEN(CAST(numero_socio_asociado AS VARCHAR(20)))
+		) AS INT)
+		WHERE CAST(numero_socio_asociado AS VARCHAR(20)) LIKE 'SN-%';
+
+		 -- 4. Eliminar tuplas con fecha_nacimiento NULL
+    DELETE FROM #GrupoFamiliarTemp WHERE fecha_nacimiento IS NULL;
+
+    -- 5. Eliminar duplicados en el Excel (por numero_socio)
+    DELETE T
+    FROM #GrupoFamiliarTemp T
+    JOIN (
+        SELECT numero_socio
+        FROM #GrupoFamiliarTemp
+        GROUP BY numero_socio
+        HAVING COUNT(*) > 1
+    ) D ON T.numero_socio = D.numero_socio;
+
+    -- 6. Eliminar filas cuyo numero_socio ya existe en socios.Socio
+    DELETE T
+    FROM #GrupoFamiliarTemp T
+    JOIN socios.Socio S ON T.numero_socio = S.numero_socio;
+	--------------------------
+		UPDATE #GrupoFamiliarTemp
+SET numero_socio_asociado = 1
+WHERE numero_socio = 4121;
+
+
+	-------------
+    -- 7. Eliminar filas cuyo numero_socio_asociado NO existe en socios.Socio
+    DELETE T
+    FROM #GrupoFamiliarTemp T
+    LEFT JOIN socios.Socio S ON T.numero_socio_asociado = S.numero_socio
+    WHERE S.numero_socio IS NULL;
+		SET IDENTITY_INSERT socios.Socio on;
+
+	 INSERT INTO socios.Socio (
+        numero_socio,
+        nombre,
+        apellido,
+        dni,
+        email,
+        fecha_nac,
+        tel_contacto,
+        telefono,
+        obra_social,
+        num_carnet_obra_social,
+        es_menor,
+        id_responsable,
+        parentesco
+    )
+    SELECT
+        numero_socio,
+        nombre,
+        apellido,
+        dni,
+        email,
+        fecha_nacimiento,
+        telefono_contacto,
+        telefono_emergencia,
+        obra_social,
+        numero_socio_obra_social,
+        1,                   -- es_menor
+        numero_socio_asociado, -- id_responsable
+        'FAMILIAR'           -- parentesco por defecto (puede ajustarse)
+    FROM #GrupoFamiliarTemp
+    WHERE 
+        dni BETWEEN 1000000 AND 99999999
+        AND (email IS NULL OR email LIKE '_%@_%._%')
+        AND fecha_nacimiento BETWEEN '1900-01-01' AND GETDATE()
+        AND (telefono_contacto LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' OR telefono_contacto IS NULL)
+        AND telefono_emergencia LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]';
+
+END;
+GO
 
 
 
@@ -1702,4 +1836,3 @@ EXEC socios.sp_importar_grupo_familiar
 
 
 	------------------------------------------
-
