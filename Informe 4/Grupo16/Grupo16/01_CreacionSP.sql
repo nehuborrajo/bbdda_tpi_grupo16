@@ -1,31 +1,31 @@
 /*
 Enunciado Informe 4:
-Luego de decidirse por un motor de base de datos relacional, llegó el momento de generar la
-base de datos. En esta oportunidad utilizarán SQL Server.
-Deberá instalar el DMBS y documentar el proceso. No incluya capturas de pantalla. Detalle
-las configuraciones aplicadas (ubicación de archivos, memoria asignada, seguridad, puertos,
-etc.) en un documento como el que le entregaría al DBA.
-Cree la base de datos, entidades y relaciones. Incluya restricciones y claves. Deberá entregar
-un archivo .sql con el script completo de creación (debe funcionar si se lo ejecuta “tal cual” es
-entregado en una sola ejecución). Incluya comentarios para indicar qué hace cada módulo
-de código.
-Genere store procedures para manejar la inserción, modificado, borrado (si corresponde,
-también debe decidir si determinadas entidades solo admitirán borrado lógico) de cada tabla.
-Los nombres de los store procedures NO deben comenzar con “SP”.
-Algunas operaciones implicarán store procedures que involucran varias tablas, uso de
+Luego de decidirse por un motor de base de datos relacional, llegÃ³ el momento de generar la
+base de datos. En esta oportunidad utilizarÃ¡n SQL Server.
+DeberÃ¡ instalar el DMBS y documentar el proceso. No incluya capturas de pantalla. Detalle
+las configuraciones aplicadas (ubicaciÃ³n de archivos, memoria asignada, seguridad, puertos,
+etc.) en un documento como el que le entregarÃ­a al DBA.
+Cree la base de datos, entidades y relaciones. Incluya restricciones y claves. DeberÃ¡ entregar
+un archivo .sql con el script completo de creaciÃ³n (debe funcionar si se lo ejecuta â€œtal cualâ€ es
+entregado en una sola ejecuciÃ³n). Incluya comentarios para indicar quÃ© hace cada mÃ³dulo
+de cÃ³digo.
+Genere store procedures para manejar la inserciÃ³n, modificado, borrado (si corresponde,
+tambiÃ©n debe decidir si determinadas entidades solo admitirÃ¡n borrado lÃ³gico) de cada tabla.
+Los nombres de los store procedures NO deben comenzar con â€œSPâ€.
+Algunas operaciones implicarÃ¡n store procedures que involucran varias tablas, uso de
 transacciones, etc. Puede que incluso realicen ciertas operaciones mediante varios SPs.
-Asegúrense de que los comentarios que acompañen al código lo expliquen.
-Genere esquemas para organizar de forma lógica los componentes del sistema y aplique esto
-en la creación de objetos. NO use el esquema “dbo”.
-Todos los SP creados deben estar acompañados de juegos de prueba. Se espera que
-realicen validaciones básicas en los SP (p/e cantidad mayor a cero, CUIT válido, etc.) y que
-en los juegos de prueba demuestren la correcta aplicación de las validaciones.
+AsegÃºrense de que los comentarios que acompaÃ±en al cÃ³digo lo expliquen.
+Genere esquemas para organizar de forma lÃ³gica los componentes del sistema y aplique esto
+en la creaciÃ³n de objetos. NO use el esquema â€œdboâ€.
+Todos los SP creados deben estar acompaÃ±ados de juegos de prueba. Se espera que
+realicen validaciones bÃ¡sicas en los SP (p/e cantidad mayor a cero, CUIT vÃ¡lido, etc.) y que
+en los juegos de prueba demuestren la correcta aplicaciÃ³n de las validaciones.
 Las pruebas deben realizarse en un script separado, donde con comentarios se indique en
 cada caso el resultado esperado
 El archivo .sql con el script debe incluir comentarios donde consten este enunciado, la fecha
-de entrega, número de grupo, nombre de la materia, nombres y DNI de los alumnos.
+de entrega, nÃºmero de grupo, nombre de la materia, nombres y DNI de los alumnos.
 Entregar todo en un zip (observar las pautas para nomenclatura antes expuestas) mediante
-la sección de prácticas de MIEL. Solo uno de los miembros del grupo debe hacer la entrega.
+la secciÃ³n de prÃ¡cticas de MIEL. Solo uno de los miembros del grupo debe hacer la entrega.
 
 Fecha de entrega: 23/05/2025
 Numero de comision: 5600
@@ -103,7 +103,7 @@ begin
 	DECLARE @categoria VARCHAR(10);
 	-- Calcular edad exacta
 	SET @edad = DATEDIFF(YEAR, @fecha_nac, GETDATE());
-	-- Ajustar edad si aún no cumplió años este año
+	-- Ajustar edad si aÃºn no cumpliÃ³ aÃ±os este aÃ±o
 	IF (DATEADD(YEAR, @edad, @fecha_nac) > GETDATE())
 		SET @edad = @edad - 1;
 	if @edad < 18
@@ -197,10 +197,10 @@ begin
 			DECLARE @membresia VARCHAR(10);
 			-- Calcular edad exacta
 			SET @edad = DATEDIFF(YEAR, @fecha_nac_menor, GETDATE());
-			-- Ajustar edad si aún no cumplió años este año
+			-- Ajustar edad si aÃºn no cumpliÃ³ aÃ±os este aÃ±o
 			IF (DATEADD(YEAR, @edad, @fecha_nac_menor) > GETDATE())
 				SET @edad = @edad - 1;
-			-- Asignar categoría según la edad
+			-- Asignar categorÃ­a segÃºn la edad
 			SET @membresia = CASE 
 				WHEN @edad <= 12 THEN (select id from socios.Membresia where nombre = 'Menor')
 				WHEN @edad BETWEEN 13 AND 17 THEN (select id from socios.Membresia where nombre = 'Cadete')
@@ -372,7 +372,7 @@ begin
     END
     ELSE
     BEGIN
-        RAISERROR('La membresía especificada no existe.', 16, 1);
+        RAISERROR('La membresÃ­a especificada no existe.', 16, 1);
     END
 end
 
@@ -453,7 +453,7 @@ as
 begin
 	if len(@nueva_contra) < 8
 	begin
-		RAISERROR('La contraseña ingresada es invalida.', 16, 1);
+		RAISERROR('La contraseÃ±a ingresada es invalida.', 16, 1);
 		return
 	end
 	if exists (select 1 from socios.Usuario where nombre_usuario = @dni)
@@ -1366,3 +1366,473 @@ delete from eventos.Clima
 exec sp.ImportarMeteo24
 exec sp.ImportarMeteo25
 
+-----------------------------------------------------------------------------
+/*para poder usar OPENROWSET activo esto
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'Ad Hoc Distributed Queries', 1;
+RECONFIGURE;
+ademas tengo que instalar "https://www.microsoft.com/es-es/download/details.aspx?id=54920"
+tengo que ver que ejecutando esto 
+EXEC sp_enum_oledb_providers;
+aparesca "Microsoft.ACE.OLEDB.12.0" y "Microsoft.ACE.OLEDB.16.0"
+y luego para verificar si se me instalo el motor uso:
+EXEC sp_MSset_oledb_prop 'Microsoft.ACE.OLEDB.16.0', N'AllowInProcess', 1;
+EXEC sp_MSset_oledb_prop 'Microsoft.ACE.OLEDB.16.0', N'DynamicParameters', 1;
+esta consulta sirve parar mirar la primera pestaÃ±a, cambiar la ruta nomas.
+SELECT * 
+FROM OPENROWSET('Microsoft.ACE.OLEDB.16.0', 
+    'Excel 12.0;Database=C:\Users\zacar\Documents\tpbdda\TPI-2025-1C\Datos socios.xlsx;HDR=YES', 
+    'SELECT * FROM [Responsables de pago$]');*/
+EXEC socios.sp_importar_responsables_pago
+    @ruta_excel = N'C:\Users\zacar\Documents\tpbdda\TPI-2025-1C\Datos socios.xlsx';
+
+
+
+
+--------------------------------------------------------------------------
+--Importar resopinsables de pago
+        
+GO
+CREATE OR ALTER PROCEDURE socios.sp_importar_responsables_pago
+    @ruta_excel NVARCHAR(260)
+AS
+BEGIN
+    BEGIN TRY
+        SET NOCOUNT ON;
+
+        -- 1. Eliminar la tabla temporal si existe
+        IF OBJECT_ID('tempdb..#ResponsablesTemp') IS NOT NULL
+            DROP TABLE #ResponsablesTemp;
+
+        -- 2. Crear tabla temporal con los nombres de columna segÃºn el Excel
+        CREATE TABLE #ResponsablesTemp (
+            numero_socio               VARCHAR(20),
+            nombre                     VARCHAR(50),
+            apellido                   VARCHAR(50),
+            dni                        INT not null,
+            email                      VARCHAR(100),
+            fecha_nacimiento           DATETIME,
+            telefono_contacto          INT,
+            telefono_emergencia        INT,
+            obra_social                VARCHAR(50),
+            numero_socio_obra_social   VARCHAR(20),
+            telefono_emergencia_obrasocial VARCHAR(50)
+        );
+
+        -- 3. ConstrucciÃ³n dinÃ¡mica de OPENROWSET para importar Excel
+        DECLARE @sql NVARCHAR(MAX) = '
+            INSERT INTO #ResponsablesTemp
+            SELECT *
+            FROM OPENROWSET(
+                ''Microsoft.ACE.OLEDB.16.0'',
+                ''Excel 12.0;HDR=YES;Database=' + @ruta_excel + ''',
+                ''SELECT * FROM [Responsables de pago$]''
+            );';
+
+        EXEC sp_executesql @sql;
+		---------------------------- normalizo los datos
+		ALTER TABLE #ResponsablesTemp ALTER COLUMN telefono_contacto VARCHAR(20);
+		UPDATE #ResponsablesTemp
+		SET telefono_contacto = STUFF(CAST(telefono_contacto AS VARCHAR(10)), 3, 0, '-')
+		WHERE telefono_contacto BETWEEN 1000000000 AND 9999999999;
+		
+		UPDATE #ResponsablesTemp
+		SET numero_socio = CAST(
+		SUBSTRING(CAST(numero_socio AS VARCHAR(20)), 4, 
+		LEN(CAST(numero_socio AS VARCHAR(20)))
+		) AS INT)
+		WHERE CAST(numero_socio AS VARCHAR(20)) LIKE 'SN-%';
+		
+		ALTER TABLE #ResponsablesTemp ALTER COLUMN telefono_emergencia VARCHAR(20);
+		UPDATE #ResponsablesTemp
+		SET telefono_emergencia = STUFF(CAST(telefono_emergencia AS VARCHAR(10)), 3, 0, '-')
+		WHERE telefono_emergencia BETWEEN 1000000000 AND 9999999999;
+		
+		UPDATE #ResponsablesTemp
+		SET dni = dni / 10
+		WHERE dni >99999999
+
+		IF EXISTS (SELECT 1 FROM #ResponsablesTemp WHERE fecha_nacimiento IS NULL)
+		BEGIN
+		PRINT 'Se eliminarÃ¡n las siguientes tuplas debido a fecha_nacimiento NULL:';
+	
+		SELECT nombre, dni
+		FROM #ResponsablesTemp
+		WHERE fecha_nacimiento IS NULL;
+		DELETE FROM #ResponsablesTemp
+		WHERE fecha_nacimiento IS NULL;
+
+		END 
+
+        -- 4. Insertar responsables en socios.Socio verificando duplicados por DNI
+		SET IDENTITY_INSERT socios.Socio off;
+		;WITH CTE_UniqueResponsables AS (
+		SELECT
+		nombre,
+        apellido,
+        dni,
+        email,
+        fecha_nacimiento,
+        telefono_contacto,
+        telefono_emergencia,
+        obra_social,
+        numero_socio_obra_social,
+        ROW_NUMBER() OVER (PARTITION BY dni ORDER BY nombre) AS rn
+		FROM #ResponsablesTemp
+		)
+		INSERT INTO socios.Socio (
+		nombre,
+		apellido,
+		dni,
+		email,
+		fecha_nac,
+		telefono,
+		tel_contacto,
+		obra_social,
+		num_carnet_obra_social,
+		activo,
+		es_menor,
+		es_responsable,
+		responsable_y_socio
+		)
+		SELECT
+		nombre,
+		apellido,
+		dni,
+		email,
+		fecha_nacimiento,
+		telefono_contacto,
+		telefono_emergencia,
+		obra_social,
+		numero_socio_obra_social,
+		1,       -- activo
+		0,       -- es_menor
+		1,       -- es_responsable
+		1        -- responsable_y_socio
+		FROM CTE_UniqueResponsables
+		WHERE rn = 1
+		AND NOT EXISTS (
+        SELECT 1
+        FROM socios.Socio s
+        WHERE s.dni = CTE_UniqueResponsables.dni
+  )
+   AND dni BETWEEN 1000000 AND 99999999
+  AND email LIKE '_%@_%._%'
+  AND LEN(email) <= 100
+  AND fecha_nacimiento BETWEEN '1900-01-01' AND GETDATE()
+  AND telefono_contacto LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+  AND telefono_emergencia LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+
+
+ 
+
+        PRINT 'ImportaciÃ³n de responsables finalizada correctamente.';
+    END TRY
+    BEGIN CATCH
+        PRINT 'Error durante la importaciÃ³n: ' + ERROR_MESSAGE();
+    END CATCH
+END;
+GO
+
+
+
+----------------------------------------------------------------------------------------------------
+
+
+--EXEC socios.sp_importar_responsables_pago
+   -- @ruta_excel = N'C:\Users\zacar\Documents\tpbdda\TPI-2025-1C\Datos socios.xlsx';
+
+
+
+
+
+-------------------------------------------------------------------------------------------------------------
+--sp importar  grupo familiar
+go
+CREATE OR ALTER PROCEDURE socios.sp_importar_grupo_familiar
+    @ruta_excel NVARCHAR(260)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- 1. Tabla temporal
+    IF OBJECT_ID('tempdb..#GrupoFamiliarTemp') IS NOT NULL
+        DROP TABLE #GrupoFamiliarTemp;
+
+    CREATE TABLE #GrupoFamiliarTemp (
+            numero_socio               VARCHAR(20),
+		    numero_socio_asociado      VARCHAR(20),
+            nombre                     VARCHAR(50),
+            apellido                   VARCHAR(50),
+            dni                        INT not null,
+            email                      VARCHAR(100),
+            fecha_nacimiento           DATETIME,
+            telefono_contacto          INT,
+            telefono_emergencia        INT,
+            obra_social                VARCHAR(50),
+            numero_socio_obra_social   VARCHAR(20),
+            telefono_emergencia_obrasocial VARCHAR(50)
+    );
+
+    -- 2. Importar desde Excel
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = '
+        INSERT INTO #GrupoFamiliarTemp
+        SELECT *
+        FROM OPENROWSET(
+            ''Microsoft.ACE.OLEDB.16.0'',
+            ''Excel 12.0;HDR=YES;Database=' + @ruta_excel + ''',
+            ''SELECT * FROM [Grupo Familiar$]''
+        );';
+    EXEC sp_executesql @sql;
+
+    -- 3. Normalizar telÃ©fonos y numero de socio
+ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_contacto VARCHAR(20);
+		UPDATE #GrupoFamiliarTemp
+		SET telefono_contacto = STUFF(CAST(telefono_contacto AS VARCHAR(10)), 3, 0, '-')
+		WHERE telefono_contacto BETWEEN 1000000000 AND 9999999999;
+
+
+		ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_emergencia VARCHAR(20);
+		UPDATE #GrupoFamiliarTemp
+		SET telefono_emergencia = STUFF(CAST(telefono_emergencia AS VARCHAR(10)), 3, 0, '-')
+		WHERE telefono_emergencia BETWEEN 1000000000 AND 9999999999;
+
+   	UPDATE #GrupoFamiliarTemp
+		SET numero_socio = CAST(
+		SUBSTRING(CAST(numero_socio AS VARCHAR(20)), 4, 
+		LEN(CAST(numero_socio AS VARCHAR(20)))
+		) AS INT)
+		WHERE CAST(numero_socio AS VARCHAR(20)) LIKE 'SN-%';
+
+			UPDATE #GrupoFamiliarTemp
+		SET numero_socio_asociado = CAST(
+		SUBSTRING(CAST(numero_socio_asociado AS VARCHAR(20)), 4, 
+		LEN(CAST(numero_socio_asociado AS VARCHAR(20)))
+		) AS INT)
+		WHERE CAST(numero_socio_asociado AS VARCHAR(20)) LIKE 'SN-%';
+
+		 -- 4. Eliminar tuplas con fecha_nacimiento NULL
+    DELETE FROM #GrupoFamiliarTemp WHERE fecha_nacimiento IS NULL;
+
+    -- 5. Eliminar duplicados en el Excel (por numero_socio)
+    DELETE T
+    FROM #GrupoFamiliarTemp T
+    JOIN (
+        SELECT numero_socio
+        FROM #GrupoFamiliarTemp
+        GROUP BY numero_socio
+        HAVING COUNT(*) > 1
+    ) D ON T.numero_socio = D.numero_socio;
+
+    -- 6. Eliminar filas cuyo numero_socio ya existe en socios.Socio
+    DELETE T
+    FROM #GrupoFamiliarTemp T
+    JOIN socios.Socio S ON T.numero_socio = S.numero_socio;
+	--------------------------
+		UPDATE #GrupoFamiliarTemp
+SET numero_socio_asociado = 1
+WHERE numero_socio = 4121;
+
+
+	-------------
+    -- 7. Eliminar filas cuyo numero_socio_asociado NO existe en socios.Socio
+    DELETE T
+    FROM #GrupoFamiliarTemp T
+    LEFT JOIN socios.Socio S ON T.numero_socio_asociado = S.numero_socio
+    WHERE S.numero_socio IS NULL;
+		SET IDENTITY_INSERT socios.Socio on;
+
+	 INSERT INTO socios.Socio (
+        numero_socio,
+        nombre,
+        apellido,
+        dni,
+        email,
+        fecha_nac,
+        tel_contacto,
+        telefono,
+        obra_social,
+        num_carnet_obra_social,
+        es_menor,
+        id_responsable,
+        parentesco
+    )
+    SELECT
+        numero_socio,
+        nombre,
+        apellido,
+        dni,
+        email,
+        fecha_nacimiento,
+        telefono_contacto,
+        telefono_emergencia,
+        obra_social,
+        numero_socio_obra_social,
+        1,                   -- es_menor
+        numero_socio_asociado, -- id_responsable
+        'FAMILIAR'           -- parentesco por defecto (puede ajustarse)
+    FROM #GrupoFamiliarTemp
+    WHERE 
+        dni BETWEEN 1000000 AND 99999999
+        AND (email IS NULL OR email LIKE '_%@_%._%')
+        AND fecha_nacimiento BETWEEN '1900-01-01' AND GETDATE()
+        AND (telefono_contacto LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' OR telefono_contacto IS NULL)
+        AND telefono_emergencia LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]';
+
+END;
+GO
+
+-----------------------------------------------------------------------------------------
+
+--EXEC socios.sp_importar_grupo_familiar
+   -- @ruta_excel = N'C:\Users\zacar\Documents\tpbdda\TPI-2025-1C\Datos socios.xlsx';
+
+
+
+--------------------------------------------------------------------------------------------
+
+--sp pago cuotas
+go
+CREATE OR ALTER PROCEDURE socios.sp_importar_grupo_familiar
+    @ruta_excel NVARCHAR(260)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- 1. Tabla temporal
+    IF OBJECT_ID('tempdb..#GrupoFamiliarTemp') IS NOT NULL
+        DROP TABLE #GrupoFamiliarTemp;
+
+    CREATE TABLE #GrupoFamiliarTemp (
+            numero_socio               VARCHAR(20),
+		    numero_socio_asociado      VARCHAR(20),
+            nombre                     VARCHAR(50),
+            apellido                   VARCHAR(50),
+            dni                        INT not null,
+            email                      VARCHAR(100),
+            fecha_nacimiento           DATETIME,
+            telefono_contacto          INT,
+            telefono_emergencia        INT,
+            obra_social                VARCHAR(50),
+            numero_socio_obra_social   VARCHAR(20),
+            telefono_emergencia_obrasocial VARCHAR(50)
+    );
+
+    -- 2. Importar desde Excel
+    DECLARE @sql NVARCHAR(MAX);
+    SET @sql = '
+        INSERT INTO #GrupoFamiliarTemp
+        SELECT *
+        FROM OPENROWSET(
+            ''Microsoft.ACE.OLEDB.16.0'',
+            ''Excel 12.0;HDR=YES;Database=' + @ruta_excel + ''',
+            ''SELECT * FROM [Grupo Familiar$]''
+        );';
+    EXEC sp_executesql @sql;
+
+    -- 3. Normalizar telÃ©fonos y numero de socio
+ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_contacto VARCHAR(20);
+		UPDATE #GrupoFamiliarTemp
+		SET telefono_contacto = STUFF(CAST(telefono_contacto AS VARCHAR(10)), 3, 0, '-')
+		WHERE telefono_contacto BETWEEN 1000000000 AND 9999999999;
+
+
+		ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_emergencia VARCHAR(20);
+		UPDATE #GrupoFamiliarTemp
+		SET telefono_emergencia = STUFF(CAST(telefono_emergencia AS VARCHAR(10)), 3, 0, '-')
+		WHERE telefono_emergencia BETWEEN 1000000000 AND 9999999999;
+
+   	UPDATE #GrupoFamiliarTemp
+		SET numero_socio = CAST(
+		SUBSTRING(CAST(numero_socio AS VARCHAR(20)), 4, 
+		LEN(CAST(numero_socio AS VARCHAR(20)))
+		) AS INT)
+		WHERE CAST(numero_socio AS VARCHAR(20)) LIKE 'SN-%';
+
+			UPDATE #GrupoFamiliarTemp
+		SET numero_socio_asociado = CAST(
+		SUBSTRING(CAST(numero_socio_asociado AS VARCHAR(20)), 4, 
+		LEN(CAST(numero_socio_asociado AS VARCHAR(20)))
+		) AS INT)
+		WHERE CAST(numero_socio_asociado AS VARCHAR(20)) LIKE 'SN-%';
+
+		 -- 4. Eliminar tuplas con fecha_nacimiento NULL
+    DELETE FROM #GrupoFamiliarTemp WHERE fecha_nacimiento IS NULL;
+
+    -- 5. Eliminar duplicados en el Excel (por numero_socio)
+    DELETE T
+    FROM #GrupoFamiliarTemp T
+    JOIN (
+        SELECT numero_socio
+        FROM #GrupoFamiliarTemp
+        GROUP BY numero_socio
+        HAVING COUNT(*) > 1
+    ) D ON T.numero_socio = D.numero_socio;
+
+    -- 6. Eliminar filas cuyo numero_socio ya existe en socios.Socio
+    DELETE T
+    FROM #GrupoFamiliarTemp T
+    JOIN socios.Socio S ON T.numero_socio = S.numero_socio;
+	--------------------------
+		UPDATE #GrupoFamiliarTemp
+SET numero_socio_asociado = 1
+WHERE numero_socio = 4121;
+
+
+	-------------
+    -- 7. Eliminar filas cuyo numero_socio_asociado NO existe en socios.Socio
+    DELETE T
+    FROM #GrupoFamiliarTemp T
+    LEFT JOIN socios.Socio S ON T.numero_socio_asociado = S.numero_socio
+    WHERE S.numero_socio IS NULL;
+		SET IDENTITY_INSERT socios.Socio on;
+
+	 INSERT INTO socios.Socio (
+        numero_socio,
+        nombre,
+        apellido,
+        dni,
+        email,
+        fecha_nac,
+        tel_contacto,
+        telefono,
+        obra_social,
+        num_carnet_obra_social,
+        es_menor,
+        id_responsable,
+        parentesco
+    )
+    SELECT
+        numero_socio,
+        nombre,
+        apellido,
+        dni,
+        email,
+        fecha_nacimiento,
+        telefono_contacto,
+        telefono_emergencia,
+        obra_social,
+        numero_socio_obra_social,
+        1,                   -- es_menor
+        numero_socio_asociado, -- id_responsable
+        'FAMILIAR'           -- parentesco por defecto (puede ajustarse)
+    FROM #GrupoFamiliarTemp
+    WHERE 
+        dni BETWEEN 1000000 AND 99999999
+        AND (email IS NULL OR email LIKE '_%@_%._%')
+        AND fecha_nacimiento BETWEEN '1900-01-01' AND GETDATE()
+        AND (telefono_contacto LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' OR telefono_contacto IS NULL)
+        AND telefono_emergencia LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]';
+
+END;
+GO
+
+
+
+
+
+
+
+	------------------------------------------
