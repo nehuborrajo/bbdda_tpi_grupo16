@@ -1,31 +1,31 @@
 /*
 Enunciado Informe 4:
-Luego de decidirse por un motor de base de datos relacional, llegó el momento de generar la
-base de datos. En esta oportunidad utilizarán SQL Server.
-Deberá instalar el DMBS y documentar el proceso. No incluya capturas de pantalla. Detalle
-las configuraciones aplicadas (ubicación de archivos, memoria asignada, seguridad, puertos,
-etc.) en un documento como el que le entregaría al DBA.
-Cree la base de datos, entidades y relaciones. Incluya restricciones y claves. Deberá entregar
-un archivo .sql con el script completo de creación (debe funcionar si se lo ejecuta “tal cual” es
-entregado en una sola ejecución). Incluya comentarios para indicar qué hace cada módulo
-de código.
-Genere store procedures para manejar la inserción, modificado, borrado (si corresponde,
-también debe decidir si determinadas entidades solo admitirán borrado lógico) de cada tabla.
-Los nombres de los store procedures NO deben comenzar con “SP”.
-Algunas operaciones implicarán store procedures que involucran varias tablas, uso de
+Luego de decidirse por un motor de base de datos relacional, llegÃ³ el momento de generar la
+base de datos. En esta oportunidad utilizarÃ¡n SQL Server.
+DeberÃ¡ instalar el DMBS y documentar el proceso. No incluya capturas de pantalla. Detalle
+las configuraciones aplicadas (ubicaciÃ³n de archivos, memoria asignada, seguridad, puertos,
+etc.) en un documento como el que le entregarÃ­a al DBA.
+Cree la base de datos, entidades y relaciones. Incluya restricciones y claves. DeberÃ¡ entregar
+un archivo .sql con el script completo de creaciÃ³n (debe funcionar si se lo ejecuta â€œtal cualâ€ es
+entregado en una sola ejecuciÃ³n). Incluya comentarios para indicar quÃ© hace cada mÃ³dulo
+de cÃ³digo.
+Genere store procedures para manejar la inserciÃ³n, modificado, borrado (si corresponde,
+tambiÃ©n debe decidir si determinadas entidades solo admitirÃ¡n borrado lÃ³gico) de cada tabla.
+Los nombres de los store procedures NO deben comenzar con â€œSPâ€.
+Algunas operaciones implicarÃ¡n store procedures que involucran varias tablas, uso de
 transacciones, etc. Puede que incluso realicen ciertas operaciones mediante varios SPs.
-Asegúrense de que los comentarios que acompañen al código lo expliquen.
-Genere esquemas para organizar de forma lógica los componentes del sistema y aplique esto
-en la creación de objetos. NO use el esquema “dbo”.
-Todos los SP creados deben estar acompañados de juegos de prueba. Se espera que
-realicen validaciones básicas en los SP (p/e cantidad mayor a cero, CUIT válido, etc.) y que
-en los juegos de prueba demuestren la correcta aplicación de las validaciones.
+AsegÃºrense de que los comentarios que acompaÃ±en al cÃ³digo lo expliquen.
+Genere esquemas para organizar de forma lÃ³gica los componentes del sistema y aplique esto
+en la creaciÃ³n de objetos. NO use el esquema â€œdboâ€.
+Todos los SP creados deben estar acompaÃ±ados de juegos de prueba. Se espera que
+realicen validaciones bÃ¡sicas en los SP (p/e cantidad mayor a cero, CUIT vÃ¡lido, etc.) y que
+en los juegos de prueba demuestren la correcta aplicaciÃ³n de las validaciones.
 Las pruebas deben realizarse en un script separado, donde con comentarios se indique en
 cada caso el resultado esperado
 El archivo .sql con el script debe incluir comentarios donde consten este enunciado, la fecha
-de entrega, número de grupo, nombre de la materia, nombres y DNI de los alumnos.
+de entrega, nÃºmero de grupo, nombre de la materia, nombres y DNI de los alumnos.
 Entregar todo en un zip (observar las pautas para nomenclatura antes expuestas) mediante
-la sección de prácticas de MIEL. Solo uno de los miembros del grupo debe hacer la entrega.
+la secciÃ³n de prÃ¡cticas de MIEL. Solo uno de los miembros del grupo debe hacer la entrega.
 
 Fecha de entrega: 23/05/2025
 Numero de comision: 5600
@@ -124,11 +124,11 @@ BEGIN
 		nombre varchar(50) not null,
 		apellido varchar(50) not null,
 		dni int not null unique check (dni between 1000000 and 99999999),
-		email varchar(40) not null check (email like '_%@_%._%'), --verifica que: tenga al menos un carácter antes de la @ / Tenga al menos un carácter entre la @ y el . / Tenga al menos un carácter después del .
+		email varchar(100) null check (email like '_%@_%._%'), --verifica que: tenga al menos un carÃ¡cter antes de la @ / Tenga al menos un carÃ¡cter entre la @ y el . / Tenga al menos un carÃ¡cter despuÃ©s del .
 		fecha_nac date not null check (fecha_nac >= '1900-01-01' and fecha_nac <= GETDATE()), --que sea mayor a 1900 y menor que fecha actual
 		telefono varchar(20) check (telefono like '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'), --verifica que sea formato xx-xxxxxxxx
 		tel_contacto varchar(20) check (tel_contacto like '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'), --verifica que sea formato xx-xxxxxxxx,
-		obra_social varchar(30),
+		obra_social varchar(60),
 		num_carnet_obra_social varchar(30),
 		activo bit not null default 1,
 		es_menor bit not null default 0,
@@ -172,7 +172,49 @@ BEGIN
 END;
 
 ------------------------------------------------------------------------------
+-- para el xsl se necesita una tabla historica.
+IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.TABLES 
+    WHERE TABLE_SCHEMA = 'eventos' AND TABLE_NAME = 'ValorActividad'
+)
+CREATE TABLE eventos.ValorActividad (
+    id INT IDENTITY PRIMARY KEY,
+    id_actividad INT NOT NULL,
+    valor FLOAT NOT NULL,
+    vigente_hasta DATE NOT NULL,
+    FOREIGN KEY (id_actividad) REFERENCES eventos.Actividad(id)
+);
 
+------------------------------------------------------------------------------
+-- para el xsl se necesita una tabla historica.
+IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.TABLES 
+    WHERE TABLE_SCHEMA = 'finanzas' AND TABLE_NAME = 'ValorCategoriaSocio'
+)
+CREATE TABLE finanzas.ValorCategoriaSocio (
+    id INT IDENTITY PRIMARY KEY,
+    categoriaSocio VARCHAR(15) NOT NULL,
+    valor FLOAT NOT NULL,
+    vigente_hasta DATE NOT NULL,
+    CONSTRAINT UQ_ValorCategoria UNIQUE (categoriaSocio, vigente_hasta)
+);
+------------------------------------------------------------------------------
+-- para el xsl se necesita una tabla historica.
+IF NOT EXISTS (
+    SELECT * FROM INFORMATION_SCHEMA.TABLES 
+    WHERE TABLE_SCHEMA = 'finanzas' AND TABLE_NAME = 'ValorTarifa'
+)
+CREATE TABLE finanzas.ValorTarifa (
+    id INT IDENTITY PRIMARY KEY,
+    tipoTarifa VARCHAR(30) NOT NULL,      --'Valor del dÃ­a', 'Valor de temporada', 'Valor del Mes'
+    grupoEdad VARCHAR(30) NOT NULL,         -- 'Adultos', 'Menores de 12 aÃ±os'
+    valorSocio FLOAT NOT NULL,              -- Valor para Socios
+    valorInvitado FLOAT NULL,               -- Valor para Invitados 
+    vigente_hasta DATE NOT NULL,
+    CONSTRAINT UQ_ValorTarifa UNIQUE (tipoTarifa, grupoEdad, vigente_hasta)
+);
+
+------------------------------------------------------------------------------
 --tabla de relacion entre socio y actividad
 IF NOT EXISTS (
     SELECT * FROM INFORMATION_SCHEMA.TABLES 
@@ -372,6 +414,7 @@ BEGIN
 END;
 */
 ------------------------------------------------------------------------------
+
 
 
 
