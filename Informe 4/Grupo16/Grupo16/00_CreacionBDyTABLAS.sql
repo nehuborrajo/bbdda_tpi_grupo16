@@ -106,7 +106,8 @@ BEGIN
     create table socios.Membresia (
 		id int identity primary key,
 		nombre varchar(6) not null,
-		costo float not null
+		costo float not null,
+		fecha_vigencia date not null
 	);
 END;
 
@@ -155,7 +156,8 @@ BEGIN
     create table eventos.Actividad (
 		id int identity primary key,
 		nombre varchar(30) not null,
-		costo float not null
+		costo float not null,
+		fecha_vigencia date not null
 	);
 END;
 
@@ -186,34 +188,21 @@ CREATE TABLE eventos.ValorActividad (
 );
 
 ------------------------------------------------------------------------------
--- para el xsl se necesita una tabla historica.
+
 IF NOT EXISTS (
     SELECT * FROM INFORMATION_SCHEMA.TABLES 
-    WHERE TABLE_SCHEMA = 'finanzas' AND TABLE_NAME = 'ValorCategoriaSocio'
+    WHERE TABLE_SCHEMA = 'finanzas' AND TABLE_NAME = 'TarifasAcceso'
 )
-CREATE TABLE finanzas.ValorCategoriaSocio (
+CREATE TABLE finanzas.TarifasAcceso (
     id INT IDENTITY PRIMARY KEY,
-    categoriaSocio VARCHAR(15) NOT NULL,
-    valor FLOAT NOT NULL,
-    vigente_hasta DATE NOT NULL,
-    CONSTRAINT UQ_ValorCategoria UNIQUE (categoriaSocio, vigente_hasta)
-);
-------------------------------------------------------------------------------
--- para el xsl se necesita una tabla historica.
-IF NOT EXISTS (
-    SELECT * FROM INFORMATION_SCHEMA.TABLES 
-    WHERE TABLE_SCHEMA = 'finanzas' AND TABLE_NAME = 'ValorTarifa'
-)
-CREATE TABLE finanzas.ValorTarifa (
-    id INT IDENTITY PRIMARY KEY,
-    tipoTarifa VARCHAR(30) NOT NULL,      --'Valor del día', 'Valor de temporada', 'Valor del Mes'
-    grupoEdad VARCHAR(30) NOT NULL,         -- 'Adultos', 'Menores de 12 años'
-    valorSocio FLOAT NOT NULL,              -- Valor para Socios
-    valorInvitado FLOAT NULL,               -- Valor para Invitados 
-    vigente_hasta DATE NOT NULL,
-    CONSTRAINT UQ_ValorTarifa UNIQUE (tipoTarifa, grupoEdad, vigente_hasta)
+    concepto VARCHAR(30) NOT NULL,      --'Valor del día', 'Valor de temporada', 'Valor del Mes'
+    grupo_edad VARCHAR(30) NOT NULL,    -- 'Adultos', 'Menores de 12 años'
+    valor_socio float NULL,         -- Socio - Invitado
+    valor_invitado FLOAT null,        
+    fecha_vigencia DATE NOT NULL,
 );
 
+--drop table finanzas.TarifasAcceso
 ------------------------------------------------------------------------------
 --tabla de relacion entre socio y actividad
 IF NOT EXISTS (

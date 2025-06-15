@@ -1403,9 +1403,7 @@ AS
 BEGIN
     BEGIN TRY
         SET NOCOUNT ON;
-
-        
-		
+	
 		-- 1. Eliminar la tabla temporal si existe
         IF OBJECT_ID('tempdb..#ResponsablesTemp') IS NOT NULL
             DROP TABLE #ResponsablesTemp;
@@ -1944,5 +1942,153 @@ delete from finanzas.Pago
 --exec sp.importar_responsables_pago @ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios - copia.xlsx'
 -----------------------------------------------------------------------------------------
 
+--sp para importar valores de actividades
+
+go
+create or alter procedure sp.importar_valores_actividad @ruta_excel NVARCHAR(260)
+as
+begin
+	begin try
+		-- 1. Tabla temporal
+		IF OBJECT_ID('tempdb..#ValoresTemp') IS NOT NULL
+			DROP TABLE #ValoresTemp;
+
+		CREATE TABLE #ValoresTemp (
+				nombre_activ varchar(30),
+				valor float,
+				fecha_vig date,
+		);
+
+		-- 2. Importar desde Excel
+		--declare @ruta_excel NVARCHAR(260) = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx'
+		DECLARE @sql NVARCHAR(MAX);
+		SET @sql = '
+			INSERT INTO #ValoresTemp
+			SELECT *
+			FROM OPENROWSET(
+				''Microsoft.ACE.OLEDB.16.0'',
+				''Excel 12.0;HDR=YES; IMEX=1;Database=' + @ruta_excel + ''',
+				''SELECT * FROM [Tarifas$B2:D8]''
+			);';
+		EXEC sp_executesql @sql;
+		select * from #ValoresTemp
+
+		insert into eventos.Actividad (nombre, costo, fecha_vigencia) select v.nombre_activ, v.valor, v.fecha_vig from #ValoresTemp v
+	end try
+	BEGIN CATCH
+        PRINT 'Error durante la importación: ' + ERROR_MESSAGE();
+    END CATCH
+end
+
+------------------------------------------------------------------------------
+exec sp.importar_valores_actividad @ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx'
+select * from eventos.Actividad
 
 
+-----------------------------------------------------------------------------------------
+
+--sp para importar valores de membresias
+
+go
+create or alter procedure sp.importar_valores_membresia @ruta_excel NVARCHAR(260)
+as
+begin
+	begin try
+		-- 1. Tabla temporal
+		IF OBJECT_ID('tempdb..#ValoresTemp') IS NOT NULL
+			DROP TABLE #ValoresTemp;
+
+		CREATE TABLE #ValoresTemp (
+				nombre_memb varchar(30),
+				valor float,
+				fecha_vig date,
+		);
+
+		-- 2. Importar desde Excel
+		--declare @ruta_excel NVARCHAR(260) = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx'
+		DECLARE @sql NVARCHAR(MAX);
+		SET @sql = '
+			INSERT INTO #ValoresTemp
+			SELECT *
+			FROM OPENROWSET(
+				''Microsoft.ACE.OLEDB.16.0'',
+				''Excel 12.0;HDR=YES; IMEX=1;Database=' + @ruta_excel + ''',
+				''SELECT * FROM [Tarifas$B10:D13]''
+			);';
+		EXEC sp_executesql @sql;
+		select * from #ValoresTemp
+
+		insert into socios.Membresia (nombre, costo, fecha_vigencia) select v.nombre_memb, v.valor, v.fecha_vig from #ValoresTemp v
+	end try
+	BEGIN CATCH
+        PRINT 'Error durante la importación: ' + ERROR_MESSAGE();
+    END CATCH
+end
+
+------------------------------------------------------------------------------
+--exec sp.importar_valores_membresia @ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx'
+--select * from socios.Membresia
+--delete from socios.Membresia
+
+------------------------------------------------------------------------------
+
+--sp para importar valores de acceso
+
+go
+create or alter procedure sp.importar_tarifas_acceso @ruta_excel varchar(260)
+as
+begin
+	begin try
+		-- 1. Tabla temporal
+		IF OBJECT_ID('tempdb..#ValoresTemp') IS NOT NULL
+			DROP TABLE #ValoresTemp;
+
+		CREATE TABLE #ValoresTemp (
+				concepto varchar(30),
+				grupo_edad varchar(30),
+				valor_socio float,
+				valor_invit float,
+				fecha_vig date,
+			);
+
+		-- 2. Importar desde Excel
+		--declare @ruta_excel NVARCHAR(260) = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx'
+		DECLARE @sql NVARCHAR(MAX);
+		SET @sql = '
+			INSERT INTO #ValoresTemp
+			SELECT *
+			FROM OPENROWSET(
+				''Microsoft.ACE.OLEDB.16.0'',
+				''Excel 12.0;HDR=NO; IMEX=1;Database=' + @ruta_excel + ''',
+				''SELECT * FROM [Tarifas$B17:F22]''
+			);';
+		EXEC sp_executesql @sql;
+		--select * from #ValoresTemp
+
+		insert into finanzas.TarifasAcceso (concepto, grupo_edad, valor_socio, valor_invitado, fecha_vigencia)
+		SELECT
+			CASE 
+				WHEN concepto IS NULL THEN LAG(concepto) OVER (ORDER BY fila)
+				ELSE concepto
+			END AS concepto_unico,
+			grupo_edad,
+			valor_socio,
+			valor_invit,
+			fecha_vig
+		FROM (
+			SELECT *,
+				   ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS fila
+			FROM #ValoresTemp
+		) AS t
+		ORDER BY fila;
+
+	end try
+	BEGIN CATCH
+        PRINT 'Error durante la importación: ' + ERROR_MESSAGE();
+    END CATCH
+end
+
+------------------------------------------------------------------------------
+
+exec sp.importar_tarifas_acceso @ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx'
+select * from finanzas.TarifasAcceso
