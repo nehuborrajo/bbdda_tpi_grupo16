@@ -90,7 +90,7 @@ BEGIN
 		id int identity primary key,
 		nombre_usuario int,
 		contrasenia varchar(20),
-		rol varchar(15) not null check (rol in ('Socio', 'Administrador')),
+		rol varchar(15) not null check (rol in ('Socio', 'Administrador', 'Responsable')),
 		fecha_vigencia_contra date
 	);
 END;
@@ -120,7 +120,7 @@ IF NOT EXISTS (
 )
 BEGIN
     create table socios.Socio (
-		numero_socio int IDENTITY PRIMARY KEY,
+		numero_socio int PRIMARY KEY,
 		nombre varchar(50) not null,
 		apellido varchar(50) not null,
 		dni int not null unique check (dni between 1000000 and 99999999),
@@ -375,7 +375,7 @@ IF NOT EXISTS (
 )
 BEGIN
     create table finanzas.Pago (
-		id int identity,
+		id bigint,
 		id_factura int,
 		id_socio int,
 		id_invitado int,

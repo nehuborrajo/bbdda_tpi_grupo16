@@ -124,9 +124,9 @@ exec sp.InsertarActividad 'Futbol', 7000
 --Probamos insertando metodos de pago
 --Admite (nombre)
 --No admite duplicado por nombre
-
+select * from finanzas.MetodoPago
 --Primer prueba, ingresamos algunos
-exec sp.CrearMetodoPago 'Mercado Pago'
+exec sp.CrearMetodoPago 'efectivo'
 exec sp.CrearMetodoPago 'Visa'
 exec sp.CrearMetodoPago 'MasterCard'
 

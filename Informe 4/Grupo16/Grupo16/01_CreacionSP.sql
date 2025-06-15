@@ -1375,7 +1375,7 @@ RECONFIGURE;
 ademas tengo que instalar "https://www.microsoft.com/es-es/download/details.aspx?id=54920"
 tengo que ver que ejecutando esto 
 EXEC sp_enum_oledb_providers;
-aparesca "Microsoft.ACE.OLEDB.12.0" y "Microsoft.ACE.OLEDB.16.0"
+aparezca "Microsoft.ACE.OLEDB.12.0" y "Microsoft.ACE.OLEDB.16.0"
 y luego para verificar si se me instalo el motor uso:
 EXEC sp_MSset_oledb_prop 'Microsoft.ACE.OLEDB.16.0', N'AllowInProcess', 1;
 EXEC sp_MSset_oledb_prop 'Microsoft.ACE.OLEDB.16.0', N'DynamicParameters', 1;
@@ -1384,8 +1384,11 @@ SELECT *
 FROM OPENROWSET('Microsoft.ACE.OLEDB.16.0', 
     'Excel 12.0;Database=C:\Users\zacar\Documents\tpbdda\TPI-2025-1C\Datos socios.xlsx;HDR=YES', 
     'SELECT * FROM [Responsables de pago$]');*/
-EXEC socios.sp_importar_responsables_pago
-    @ruta_excel = N'C:\Users\zacar\Documents\tpbdda\TPI-2025-1C\Datos socios.xlsx';
+--EXEC socios.sp_importar_responsables_pago
+
+--@ruta_excel = N'C:\Users\zacar\Documents\tpbdda\TPI-2025-1C\Datos socios.xlsx';
+declare @ruta_excel nvarchar(260)
+set @ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
 
 
 
@@ -1394,14 +1397,16 @@ EXEC socios.sp_importar_responsables_pago
 --Importar resopinsables de pago
         
 GO
-CREATE OR ALTER PROCEDURE socios.sp_importar_responsables_pago
+CREATE OR ALTER PROCEDURE sp.importar_responsables_pago
     @ruta_excel NVARCHAR(260)
 AS
 BEGIN
     BEGIN TRY
         SET NOCOUNT ON;
 
-        -- 1. Eliminar la tabla temporal si existe
+        
+		
+		-- 1. Eliminar la tabla temporal si existe
         IF OBJECT_ID('tempdb..#ResponsablesTemp') IS NOT NULL
             DROP TABLE #ResponsablesTemp;
 
@@ -1420,7 +1425,8 @@ BEGIN
             telefono_emergencia_obrasocial VARCHAR(50)
         );
 
-        -- 3. Construcción dinámica de OPENROWSET para importar Excel
+		--declare @ruta_excel nvarchar(260) = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+	   -- 3. Construcción dinámica de OPENROWSET para importar Excel
         DECLARE @sql NVARCHAR(MAX) = '
             INSERT INTO #ResponsablesTemp
             SELECT *
@@ -1431,12 +1437,16 @@ BEGIN
             );';
 
         EXEC sp_executesql @sql;
+
+		--select * from #ResponsablesTemp
 		---------------------------- normalizo los datos
+		--casteo telefonos de contacto
 		ALTER TABLE #ResponsablesTemp ALTER COLUMN telefono_contacto VARCHAR(20);
 		UPDATE #ResponsablesTemp
 		SET telefono_contacto = STUFF(CAST(telefono_contacto AS VARCHAR(10)), 3, 0, '-')
 		WHERE telefono_contacto BETWEEN 1000000000 AND 9999999999;
 		
+		--casteo nmero de socio (dejo solo el numero)
 		UPDATE #ResponsablesTemp
 		SET numero_socio = CAST(
 		SUBSTRING(CAST(numero_socio AS VARCHAR(20)), 4, 
@@ -1444,90 +1454,107 @@ BEGIN
 		) AS INT)
 		WHERE CAST(numero_socio AS VARCHAR(20)) LIKE 'SN-%';
 		
+		--casteo telefonos de emergencia
 		ALTER TABLE #ResponsablesTemp ALTER COLUMN telefono_emergencia VARCHAR(20);
 		UPDATE #ResponsablesTemp
 		SET telefono_emergencia = STUFF(CAST(telefono_emergencia AS VARCHAR(10)), 3, 0, '-')
 		WHERE telefono_emergencia BETWEEN 1000000000 AND 9999999999;
 		
+		--casteo dni's (ajusto a maximo 8 digitos)
 		UPDATE #ResponsablesTemp
 		SET dni = dni / 10
 		WHERE dni >99999999
 
+		--no dejo insertar aquellas tuplas con fecha de nac null
 		IF EXISTS (SELECT 1 FROM #ResponsablesTemp WHERE fecha_nacimiento IS NULL)
 		BEGIN
-		PRINT 'Se eliminarán las siguientes tuplas debido a fecha_nacimiento NULL:';
+			--Se eliminarán las siguientes tuplas debido a fecha_nacimiento NULL
 	
-		SELECT nombre, dni
-		FROM #ResponsablesTemp
-		WHERE fecha_nacimiento IS NULL;
-		DELETE FROM #ResponsablesTemp
-		WHERE fecha_nacimiento IS NULL;
-
+			/*SELECT nombre, dni
+			FROM #ResponsablesTemp
+			WHERE fecha_nacimiento IS NULL;*/
+			DELETE FROM #ResponsablesTemp
+			WHERE fecha_nacimiento IS NULL;
 		END 
 
+		--select * from socios.Socio
         -- 4. Insertar responsables en socios.Socio verificando duplicados por DNI
-		SET IDENTITY_INSERT socios.Socio off;
-		;WITH CTE_UniqueResponsables AS (
-		SELECT
-		nombre,
-        apellido,
-        dni,
-        email,
-        fecha_nacimiento,
-        telefono_contacto,
-        telefono_emergencia,
-        obra_social,
-        numero_socio_obra_social,
-        ROW_NUMBER() OVER (PARTITION BY dni ORDER BY nombre) AS rn
-		FROM #ResponsablesTemp
-		)
-		INSERT INTO socios.Socio (
-		nombre,
-		apellido,
-		dni,
-		email,
-		fecha_nac,
-		telefono,
-		tel_contacto,
-		obra_social,
-		num_carnet_obra_social,
-		activo,
-		es_menor,
-		es_responsable,
-		responsable_y_socio
-		)
-		SELECT
-		nombre,
-		apellido,
-		dni,
-		email,
-		fecha_nacimiento,
-		telefono_contacto,
-		telefono_emergencia,
-		obra_social,
-		numero_socio_obra_social,
-		1,       -- activo
-		0,       -- es_menor
-		1,       -- es_responsable
-		1        -- responsable_y_socio
-		FROM CTE_UniqueResponsables
-		WHERE rn = 1
-		AND NOT EXISTS (
-        SELECT 1
-        FROM socios.Socio s
-        WHERE s.dni = CTE_UniqueResponsables.dni
-  )
-   AND dni BETWEEN 1000000 AND 99999999
-  AND email LIKE '_%@_%._%'
-  AND LEN(email) <= 100
-  AND fecha_nacimiento BETWEEN '1900-01-01' AND GETDATE()
-  AND telefono_contacto LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
-  AND telefono_emergencia LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+		
+		DECLARE @max_id INT = (SELECT MAX(numero_socio) FROM #ResponsablesTemp)
+		DECLARE @i INT = (SELECT MIN(numero_socio) FROM #ResponsablesTemp)
+		declare @dni int
+		declare @usuario_id int
+		declare @membresia int = (select id from socios.Membresia where nombre = 'Mayor')
+		print @membresia
 
+		PRINT 'MIN ID: ' + CAST(@i AS VARCHAR) + ' / MAX ID: ' + CAST(@max_id AS VARCHAR);
 
- 
-
-        PRINT 'Importación de responsables finalizada correctamente.';
+		while @i <= @max_id
+		begin
+			PRINT 'Evaluando socio: ' + CAST(@i AS VARCHAR);
+			if exists (select 1 from #ResponsablesTemp where numero_socio = @i)
+			begin
+				PRINT 'Existe en #ResponsablesTemp: ' + CAST(@i AS VARCHAR);
+				select @dni = dni from #ResponsablesTemp where numero_socio = @i
+				if ((not exists (select 1 from socios.Socio where numero_socio = @i)) and not exists(select 1 from socios.Socio where dni = @dni))
+				begin
+					exec sp.CrearUsuarioNuevo @dni, 'Responsable', @id_usuario = @usuario_id output
+					IF @usuario_id IS not NULL
+					begin
+						INSERT INTO socios.Socio (
+						numero_socio,
+						nombre,
+						apellido,
+						dni,
+						email,
+						fecha_nac,
+						telefono,
+						tel_contacto,
+						obra_social,
+						num_carnet_obra_social,
+						activo,
+						es_menor,
+						es_responsable,
+						responsable_y_socio,
+						membresia_id,
+						usuario_id
+						)
+						SELECT
+						@i,
+						nombre,
+						apellido,
+						dni,
+						email,
+						fecha_nacimiento,
+						telefono_contacto,
+						telefono_emergencia,
+						obra_social,
+						numero_socio_obra_social,
+						1,       -- activo
+						0,       -- es_menor
+						1,       -- es_responsable
+						1,        -- responsable_y_socio
+						@membresia,
+						@usuario_id
+						FROM #ResponsablesTemp
+						WHERE
+							numero_socio = @i
+							AND dni BETWEEN 1000000 AND 99999999
+							AND email LIKE '_%@_%._%'
+							AND LEN(email) <= 100
+							AND fecha_nacimiento BETWEEN '1900-01-01' AND GETDATE()
+							AND telefono_contacto LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+							AND telefono_emergencia LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'
+					end
+					else
+						PRINT 'Fallo al crear usuario para DNI: ' + CAST(@dni AS VARCHAR);			
+				end
+				else
+					PRINT 'Numero de socio ' + CAST(@i AS VARCHAR) + ' o DNI ' + CAST(@dni AS VARCHAR) + 'ya existente.'
+			end
+			set @i += 1
+		end			
+		PRINT 'Importación de responsables finalizada correctamente.';
     END TRY
     BEGIN CATCH
         PRINT 'Error durante la importación: ' + ERROR_MESSAGE();
@@ -1540,17 +1567,21 @@ GO
 ----------------------------------------------------------------------------------------------------
 
 
---EXEC socios.sp_importar_responsables_pago
-   -- @ruta_excel = N'C:\Users\zacar\Documents\tpbdda\TPI-2025-1C\Datos socios.xlsx';
+--EXEC socios.sp_importar_responsables_pago @ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
 
+select * from socios.Socio where es_menor = 0
+select * from socios.Socio
+select * from socios.Usuario
+delete from socios.Usuario
 
+delete from socios.Socio
 
 
 
 -------------------------------------------------------------------------------------------------------------
 --sp importar  grupo familiar
 go
-CREATE OR ALTER PROCEDURE socios.sp_importar_grupo_familiar
+CREATE OR ALTER PROCEDURE sp.importar_grupo_familiar
     @ruta_excel NVARCHAR(260)
 AS
 BEGIN
@@ -1571,24 +1602,27 @@ BEGIN
             telefono_contacto          INT,
             telefono_emergencia        INT,
             obra_social                VARCHAR(50),
-            numero_socio_obra_social   VARCHAR(20),
+            numero_socio_obra_social   VARCHAR(30),
             telefono_emergencia_obrasocial VARCHAR(50)
     );
 
     -- 2. Importar desde Excel
-    DECLARE @sql NVARCHAR(MAX);
+    --declare @ruta_excel nvarchar(260)
+	--set @ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+	DECLARE @sql NVARCHAR(MAX);
     SET @sql = '
         INSERT INTO #GrupoFamiliarTemp
         SELECT *
         FROM OPENROWSET(
             ''Microsoft.ACE.OLEDB.16.0'',
-            ''Excel 12.0;HDR=YES;Database=' + @ruta_excel + ''',
+            ''Excel 12.0;HDR=YES; IMEX=1;Database=' + @ruta_excel + ''',
             ''SELECT * FROM [Grupo Familiar$]''
         );';
     EXEC sp_executesql @sql;
 
+	--select * from #GrupoFamiliarTemp
     -- 3. Normalizar teléfonos y numero de socio
-ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_contacto VARCHAR(20);
+		ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_contacto VARCHAR(20);
 		UPDATE #GrupoFamiliarTemp
 		SET telefono_contacto = STUFF(CAST(telefono_contacto AS VARCHAR(10)), 3, 0, '-')
 		WHERE telefono_contacto BETWEEN 1000000000 AND 9999999999;
@@ -1599,7 +1633,7 @@ ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_contacto VARCHAR(20);
 		SET telefono_emergencia = STUFF(CAST(telefono_emergencia AS VARCHAR(10)), 3, 0, '-')
 		WHERE telefono_emergencia BETWEEN 1000000000 AND 9999999999;
 
-   	UPDATE #GrupoFamiliarTemp
+   		UPDATE #GrupoFamiliarTemp
 		SET numero_socio = CAST(
 		SUBSTRING(CAST(numero_socio AS VARCHAR(20)), 4, 
 		LEN(CAST(numero_socio AS VARCHAR(20)))
@@ -1631,9 +1665,9 @@ ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_contacto VARCHAR(20);
     FROM #GrupoFamiliarTemp T
     JOIN socios.Socio S ON T.numero_socio = S.numero_socio;
 	--------------------------
-		UPDATE #GrupoFamiliarTemp
-SET numero_socio_asociado = 1
-WHERE numero_socio = 4121;
+	/*UPDATE #GrupoFamiliarTemp
+	SET numero_socio_asociado = 1
+	WHERE numero_socio = 4121;*/
 
 
 	-------------
@@ -1642,197 +1676,273 @@ WHERE numero_socio = 4121;
     FROM #GrupoFamiliarTemp T
     LEFT JOIN socios.Socio S ON T.numero_socio_asociado = S.numero_socio
     WHERE S.numero_socio IS NULL;
-		SET IDENTITY_INSERT socios.Socio on;
+	--SET IDENTITY_INSERT socios.Socio on;
 
-	 INSERT INTO socios.Socio (
-        numero_socio,
-        nombre,
-        apellido,
-        dni,
-        email,
-        fecha_nac,
-        tel_contacto,
-        telefono,
-        obra_social,
-        num_carnet_obra_social,
-        es_menor,
-        id_responsable,
-        parentesco
-    )
-    SELECT
-        numero_socio,
-        nombre,
-        apellido,
-        dni,
-        email,
-        fecha_nacimiento,
-        telefono_contacto,
-        telefono_emergencia,
-        obra_social,
-        numero_socio_obra_social,
-        1,                   -- es_menor
-        numero_socio_asociado, -- id_responsable
-        'FAMILIAR'           -- parentesco por defecto (puede ajustarse)
-    FROM #GrupoFamiliarTemp
-    WHERE 
-        dni BETWEEN 1000000 AND 99999999
-        AND (email IS NULL OR email LIKE '_%@_%._%')
-        AND fecha_nacimiento BETWEEN '1900-01-01' AND GETDATE()
-        AND (telefono_contacto LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' OR telefono_contacto IS NULL)
-        AND telefono_emergencia LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]';
+    declare	@fecha_nacimiento				DATETIME
+	declare @edad							int
+	declare @membresia						int
 
-END;
+	DECLARE @max_id INT = (SELECT MAX(numero_socio) FROM #GrupoFamiliarTemp);
+	DECLARE @i INT = (SELECT MIN(numero_socio) FROM #GrupoFamiliarTemp);
+
+	while @i <= @max_id
+	begin
+		if exists (select 1 from #GrupoFamiliarTemp where numero_socio = @i)
+		begin
+			PRINT 'Insertando socio número ' + CAST(@i AS VARCHAR)
+			--copio el valor de la fecha de nac
+			select @fecha_nacimiento = fecha_nacimiento from #GrupoFamiliarTemp where numero_socio = @i
+
+			-- Calcular edad exacta
+			SET @edad = DATEDIFF(YEAR, @fecha_nacimiento, GETDATE());
+			-- Ajustar edad si aún no cumplió años este año
+			IF (DATEADD(YEAR, @edad, @fecha_nacimiento) > GETDATE())
+			SET @edad = @edad - 1;
+			-- Asignar categoría según la edad
+			SET @membresia = CASE 
+			WHEN @edad <= 12 THEN (select id from socios.Membresia where nombre = 'Menor')
+			WHEN @edad BETWEEN 13 AND 17 THEN (select id from socios.Membresia where nombre = 'Cadete')
+			ELSE (select id from socios.Membresia where nombre = 'Mayor')
+			end
+			--print @membresia
+
+			INSERT INTO socios.Socio (
+				numero_socio,
+				nombre,
+				apellido,
+				dni,
+				email,
+				fecha_nac,
+				tel_contacto,
+				telefono,
+				obra_social,
+				num_carnet_obra_social,
+				es_menor,
+				id_responsable,
+				parentesco,
+				membresia_id
+			)
+			SELECT
+				@i,
+				nombre,
+				apellido,
+				dni,
+				email,
+				fecha_nacimiento,
+				telefono_contacto,
+				telefono_emergencia,
+				obra_social,
+				numero_socio_obra_social,
+				1,                   -- es_menor
+				numero_socio_asociado, -- id_responsable
+				'Familiar',           -- parentesco por defecto (puede ajustarse)
+				@membresia
+			FROM #GrupoFamiliarTemp
+			WHERE 
+				numero_socio = @i
+				and dni BETWEEN 1000000 AND 99999999
+				AND (email IS NULL OR email LIKE '_%@_%._%')
+				AND fecha_nacimiento BETWEEN '1900-01-01' AND GETDATE()
+				AND (telefono_contacto LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' OR telefono_contacto IS NULL)
+				AND telefono_emergencia LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]';
+		end
+		else
+			PRINT 'No encontró la tupla para el socio ' + CAST(@i AS VARCHAR)
+		set @i += 1
+	end
+
+END
 GO
 
 -----------------------------------------------------------------------------------------
+delete from socios.Socio where es_menor = 1
+select * from socios.Membresia
+select * from socios.Socio where es_menor = 1
+select * from socios.Socio where es_menor = 0
+--EXEC socios.sp_importar_grupo_familiar @ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
 
---EXEC socios.sp_importar_grupo_familiar
-   -- @ruta_excel = N'C:\Users\zacar\Documents\tpbdda\TPI-2025-1C\Datos socios.xlsx';
+-----------------------------------------------------------------------------------------
 
+--sp para generar cuotas por importacion
+go
+create or alter procedure sp.GenerarCuotaImportacion @num_socio int, @fecha datetime, @valor float, @id_cuota int output
+as
+begin
+	--seteo @fecha como el primer dia del mes
+	set @fecha = DATEFROMPARTS(YEAR(@fecha), MONTH(@fecha), 1)
+	declare @periodo VARCHAR(7) = FORMAT(@fecha, 'MM-yyyy')
+	
+	insert into finanzas.Cuota (id_socio, valor, fecha, periodo, estado) values (@num_socio, @valor, @fecha, @periodo, 'Pagada')
+	set @id_cuota = SCOPE_IDENTITY()
+end
+go
+
+-------------------------------------------------------------------------------------------
+
+--sp para generar facturas a partir de cuotas generadas por importacion
+go
+create or alter procedure sp.GenerarFacturaCuotaImportacion @cuota_id int, @num_socio int, @valor float, @fecha datetime, @id_factura int output
+as
+begin
+	declare @fecha_vencim datetime = DATEADD(YEAR, 1, @fecha);
+	declare @detalle  varchar(100) = 'Cuota: ' + cast(@valor as varchar) 
+
+	insert into finanzas.Factura (id_cuota, id_socio, valor, fecha_emision, fecha_vencimiento, estado, detalle, origen)
+	values (@cuota_id, @num_socio, @valor, @fecha, @fecha_vencim, 'Pagada',@detalle, 'Cuota')
+	set @id_factura = SCOPE_IDENTITY()
+end
 
 
 --------------------------------------------------------------------------------------------
 
 --sp pago cuotas
 go
-CREATE OR ALTER PROCEDURE socios.sp_importar_grupo_familiar
+CREATE OR ALTER PROCEDURE sp.importar_pago_cuotas
     @ruta_excel NVARCHAR(260)
 AS
 BEGIN
     SET NOCOUNT ON;
 
     -- 1. Tabla temporal
-    IF OBJECT_ID('tempdb..#GrupoFamiliarTemp') IS NOT NULL
-        DROP TABLE #GrupoFamiliarTemp;
+    IF OBJECT_ID('tempdb..#PagosTemp') IS NOT NULL
+        DROP TABLE #PagosTemp;
+	IF OBJECT_ID('tempdb..#PagosTemp') IS NOT NULL
+        DROP TABLE #PagosTempOrdenados;
 
-    CREATE TABLE #GrupoFamiliarTemp (
-            numero_socio               VARCHAR(20),
-		    numero_socio_asociado      VARCHAR(20),
-            nombre                     VARCHAR(50),
-            apellido                   VARCHAR(50),
-            dni                        INT not null,
-            email                      VARCHAR(100),
-            fecha_nacimiento           DATETIME,
-            telefono_contacto          INT,
-            telefono_emergencia        INT,
-            obra_social                VARCHAR(50),
-            numero_socio_obra_social   VARCHAR(20),
-            telefono_emergencia_obrasocial VARCHAR(50)
+    CREATE TABLE #PagosTemp (
+            numero_pago				   bigint,
+			fecha					   DATETIME,
+		    numero_socio_resp		   VARCHAR(20),
+            valor                      float,
+            medio_pago				   varchar(25)
     );
 
     -- 2. Importar desde Excel
-    DECLARE @sql NVARCHAR(MAX);
+    --declare @ruta_excel NVARCHAR(260) = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx'
+	DECLARE @sql NVARCHAR(MAX);
     SET @sql = '
-        INSERT INTO #GrupoFamiliarTemp
+        INSERT INTO #PagosTemp
         SELECT *
         FROM OPENROWSET(
             ''Microsoft.ACE.OLEDB.16.0'',
-            ''Excel 12.0;HDR=YES;Database=' + @ruta_excel + ''',
-            ''SELECT * FROM [Grupo Familiar$]''
+            ''Excel 12.0;HDR=YES; IMEX=1;Database=' + @ruta_excel + ''',
+            ''SELECT * FROM [pago cuotas$]''
         );';
     EXEC sp_executesql @sql;
+	select * from #PagosTemp
 
-    -- 3. Normalizar teléfonos y numero de socio
-ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_contacto VARCHAR(20);
-		UPDATE #GrupoFamiliarTemp
-		SET telefono_contacto = STUFF(CAST(telefono_contacto AS VARCHAR(10)), 3, 0, '-')
-		WHERE telefono_contacto BETWEEN 1000000000 AND 9999999999;
-
-
-		ALTER TABLE #GrupoFamiliarTemp ALTER COLUMN telefono_emergencia VARCHAR(20);
-		UPDATE #GrupoFamiliarTemp
-		SET telefono_emergencia = STUFF(CAST(telefono_emergencia AS VARCHAR(10)), 3, 0, '-')
-		WHERE telefono_emergencia BETWEEN 1000000000 AND 9999999999;
-
-   	UPDATE #GrupoFamiliarTemp
-		SET numero_socio = CAST(
-		SUBSTRING(CAST(numero_socio AS VARCHAR(20)), 4, 
-		LEN(CAST(numero_socio AS VARCHAR(20)))
+    -- Normalizar numero de socio
+   		UPDATE #PagosTemp
+		SET numero_socio_resp = CAST(
+		SUBSTRING(CAST(numero_socio_resp AS VARCHAR(20)), 4, 
+		LEN(CAST(numero_socio_resp AS VARCHAR(20)))
 		) AS INT)
-		WHERE CAST(numero_socio AS VARCHAR(20)) LIKE 'SN-%';
+		WHERE CAST(numero_socio_resp AS VARCHAR(20)) LIKE 'SN-%';
 
-			UPDATE #GrupoFamiliarTemp
-		SET numero_socio_asociado = CAST(
-		SUBSTRING(CAST(numero_socio_asociado AS VARCHAR(20)), 4, 
-		LEN(CAST(numero_socio_asociado AS VARCHAR(20)))
-		) AS INT)
-		WHERE CAST(numero_socio_asociado AS VARCHAR(20)) LIKE 'SN-%';
-
-		 -- 4. Eliminar tuplas con fecha_nacimiento NULL
-    DELETE FROM #GrupoFamiliarTemp WHERE fecha_nacimiento IS NULL;
-
-    -- 5. Eliminar duplicados en el Excel (por numero_socio)
+    -- Eliminar duplicados en el Excel (por numero_pago)
     DELETE T
-    FROM #GrupoFamiliarTemp T
+    FROM #PagosTemp T
     JOIN (
-        SELECT numero_socio
-        FROM #GrupoFamiliarTemp
-        GROUP BY numero_socio
+        SELECT numero_pago
+        FROM #PagosTemp
+        GROUP BY numero_pago
         HAVING COUNT(*) > 1
-    ) D ON T.numero_socio = D.numero_socio;
+    ) D ON T.numero_pago = D.numero_pago;
 
-    -- 6. Eliminar filas cuyo numero_socio ya existe en socios.Socio
+    -- Eliminar filas cuyo numero_socio no existe en socios.Socio
     DELETE T
-    FROM #GrupoFamiliarTemp T
-    JOIN socios.Socio S ON T.numero_socio = S.numero_socio;
-	--------------------------
-		UPDATE #GrupoFamiliarTemp
-SET numero_socio_asociado = 1
-WHERE numero_socio = 4121;
+    FROM #PagosTemp T
+    LEFT JOIN socios.Socio S ON T.numero_socio_resp = S.numero_socio
+	WHERE S.numero_socio IS NULL;
+
+	----------------------------------------------------------
+	--utilizo una tabla temporal nueva con numero de fila asignado
+	WITH PagosNumerados AS (
+    SELECT 
+        ROW_NUMBER() OVER (ORDER BY numero_pago) AS fila,
+        numero_pago,
+        fecha,
+        numero_socio_resp,
+        valor,
+        medio_pago
+    FROM #PagosTemp
+	)
+	SELECT * INTO #PagosTempOrdenados FROM PagosNumerados;
+
+	select * from #PagosTempOrdenados
+
+	-----------------------------------------------------------
+	declare @max_fila int = (select max(fila) from #PagosTempOrdenados)
+	declare @min_fila int = (select min(fila) from #PagosTempOrdenados)
+
+	declare @num_pago bigint
+	declare @num_socio int
+	declare @fecha datetime
+	declare @cuota_id int
+	declare @factura_id int
+	declare @valor float
+	declare @medio_pago_nombre varchar(30)
+	declare @medio_pago_id int
 
 
-	-------------
-    -- 7. Eliminar filas cuyo numero_socio_asociado NO existe en socios.Socio
-    DELETE T
-    FROM #GrupoFamiliarTemp T
-    LEFT JOIN socios.Socio S ON T.numero_socio_asociado = S.numero_socio
-    WHERE S.numero_socio IS NULL;
-		SET IDENTITY_INSERT socios.Socio on;
+	while @min_fila <= @max_fila
+	begin
+		select @num_pago = numero_pago from #PagosTempOrdenados where fila = @min_fila
+		if exists (select 1 from #PagosTemp where numero_pago = @num_pago)
+		begin
+			if not exists (select 1 from finanzas.Pago where id = @num_pago)
+			begin
+				select @medio_pago_nombre = medio_pago from #PagosTemp where numero_pago = @num_pago
+				set @medio_pago_id = (select id from finanzas.MetodoPago where nombre = @medio_pago_nombre)
+				print @medio_pago_id
+				if (@medio_pago_id is not null)
+				begin
+					select
+						@fecha = p.fecha,
+						@valor = p.valor,						
+						@num_socio = p.numero_socio_resp
+					from #PagosTemp p
+					where numero_pago = @num_pago	
 
-	 INSERT INTO socios.Socio (
-        numero_socio,
-        nombre,
-        apellido,
-        dni,
-        email,
-        fecha_nac,
-        tel_contacto,
-        telefono,
-        obra_social,
-        num_carnet_obra_social,
-        es_menor,
-        id_responsable,
-        parentesco
-    )
-    SELECT
-        numero_socio,
-        nombre,
-        apellido,
-        dni,
-        email,
-        fecha_nacimiento,
-        telefono_contacto,
-        telefono_emergencia,
-        obra_social,
-        numero_socio_obra_social,
-        1,                   -- es_menor
-        numero_socio_asociado, -- id_responsable
-        'FAMILIAR'           -- parentesco por defecto (puede ajustarse)
-    FROM #GrupoFamiliarTemp
-    WHERE 
-        dni BETWEEN 1000000 AND 99999999
-        AND (email IS NULL OR email LIKE '_%@_%._%')
-        AND fecha_nacimiento BETWEEN '1900-01-01' AND GETDATE()
-        AND (telefono_contacto LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' OR telefono_contacto IS NULL)
-        AND telefono_emergencia LIKE '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]';
+					exec sp.GenerarCuotaImportacion @num_socio, @fecha, @valor, @id_cuota = @cuota_id output
+					exec sp.GenerarFacturaCuotaImportacion @cuota_id, @num_socio, @valor, @fecha, @id_factura = @factura_id output
+
+					insert into finanzas.Pago(id, id_cuota, id_factura, id_socio, id_metodo_pago, fecha, valor)
+					values (@num_pago, @cuota_id, @factura_id, @num_socio, @medio_pago_id, @fecha, @valor)
+
+					print 'Pago ' + cast(@num_pago as varchar) + ' registrado correctamente.'
+				end
+				else
+				print 'Metodo de pago inexistente.'
+			end
+			else
+				print 'El numero de pago ya existe registrado: ' + cast(@num_pago as varchar)
+		end
+		else
+			print 'El numero de pago no existe en #PagosTemp: ' + cast(@num_pago as varchar)
+		set @min_fila += 1
+	end
 
 END;
 GO
 
+-----------------------------------------------------------------------------------------
+
+--exec sp.importar_pago_cuotas @ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx'
+
+select * from socios.Socio
+select * from finanzas.Cuota order by id_socio
+select * from finanzas.Factura
+select * from finanzas.Pago
+
+delete from socios.Socio
+delete from socios.Usuario
+delete from finanzas.Cuota
+delete from finanzas.Factura
+delete from finanzas.Pago
+
+--exec sp.importar_responsables_pago @ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios - copia.xlsx'
+-----------------------------------------------------------------------------------------
 
 
 
-
-
-
-	------------------------------------------
