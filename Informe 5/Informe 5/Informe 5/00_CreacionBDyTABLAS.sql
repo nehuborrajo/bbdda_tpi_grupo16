@@ -1,33 +1,36 @@
 /*
-Enunciado Informe 4:
-Luego de decidirse por un motor de base de datos relacional, llegÃ³ el momento de generar la
-base de datos. En esta oportunidad utilizarÃ¡n SQL Server.
-DeberÃ¡ instalar el DMBS y documentar el proceso. No incluya capturas de pantalla. Detalle
-las configuraciones aplicadas (ubicaciÃ³n de archivos, memoria asignada, seguridad, puertos,
-etc.) en un documento como el que le entregarÃ­a al DBA.
-Cree la base de datos, entidades y relaciones. Incluya restricciones y claves. DeberÃ¡ entregar
-un archivo .sql con el script completo de creaciÃ³n (debe funcionar si se lo ejecuta â€œtal cualâ€ es
-entregado en una sola ejecuciÃ³n). Incluya comentarios para indicar quÃ© hace cada mÃ³dulo
-de cÃ³digo.
-Genere store procedures para manejar la inserciÃ³n, modificado, borrado (si corresponde,
-tambiÃ©n debe decidir si determinadas entidades solo admitirÃ¡n borrado lÃ³gico) de cada tabla.
-Los nombres de los store procedures NO deben comenzar con â€œSPâ€.
-Algunas operaciones implicarÃ¡n store procedures que involucran varias tablas, uso de
-transacciones, etc. Puede que incluso realicen ciertas operaciones mediante varios SPs.
-AsegÃºrense de que los comentarios que acompaÃ±en al cÃ³digo lo expliquen.
-Genere esquemas para organizar de forma lÃ³gica los componentes del sistema y aplique esto
-en la creaciÃ³n de objetos. NO use el esquema â€œdboâ€.
-Todos los SP creados deben estar acompaÃ±ados de juegos de prueba. Se espera que
-realicen validaciones bÃ¡sicas en los SP (p/e cantidad mayor a cero, CUIT vÃ¡lido, etc.) y que
-en los juegos de prueba demuestren la correcta aplicaciÃ³n de las validaciones.
-Las pruebas deben realizarse en un script separado, donde con comentarios se indique en
-cada caso el resultado esperado
-El archivo .sql con el script debe incluir comentarios donde consten este enunciado, la fecha
-de entrega, nÃºmero de grupo, nombre de la materia, nombres y DNI de los alumnos.
-Entregar todo en un zip (observar las pautas para nomenclatura antes expuestas) mediante
-la secciÃ³n de prÃ¡cticas de MIEL. Solo uno de los miembros del grupo debe hacer la entrega.
+Enunciado Informe 5:
+Archivos indicados en Miel.
+Se requiere que importe toda la información antes mencionada a la base de datos:
+• Genere los objetos necesarios (store procedures, funciones, etc.) para importar los
+archivos antes mencionados. Tenga en cuenta que cada mes se recibirán archivos de
+novedades con la misma estructura, pero datos nuevos para agregar a cada maestro.
+• Considere este comportamiento al generar el código. Debe admitir la importación de
+novedades periódicamente sin eliminar los datos ya cargados y sin generar
+duplicados.
+• Cada maestro debe importarse con un SP distinto. No se aceptarán scripts que
+realicen tareas por fuera de un SP.
+• La estructura/esquema de las tablas a generar será decisión suya. Puede que deba
+realizar procesos de transformación sobre los maestros recibidos para adaptarlos a la
+estructura requerida. Estas adaptaciones deberán hacerla en la DB y no en los
+archivos provistos.
+• Los archivos CSV/JSON no deben modificarse. En caso de que haya datos mal
+cargados, incompletos, erróneos, etc., deberá contemplarlo y realizar las correcciones
+en el fuente SQL. (Sería una excepción si el archivo está malformado y no es posible
+interpretarlo como JSON o CSV, pero los hemos verificado cuidadosamente).
+• Tener en cuenta que para la ampliación del software no existen datos; se deben
+preparar los datos de prueba necesarios para cumplimentar los requisitos planteados.
+• El código fuente no debe incluir referencias hardcodeadas a nombres o ubicaciones
+de archivo. Esto debe permitirse ser provisto por parámetro en la invocación. En el
+código de ejemplo el grupo decidirá dónde se ubicarían los archivos. Esto debe
+aparecer en comentarios del módulo.
+• El uso de SQL dinámico no está exigido en forma explícita… pero puede que
+encuentre que es la única forma de resolver algunos puntos. No abuse del SQL
+dinámico, deberá justificar su uso siempre.
+• Respecto a los informes XML: no se espera que produzcan un archivo nuevo en el
+filesystem, basta con que el resultado de la consulta sea XML.
 
-Fecha de entrega: 23/05/2025
+Fecha de entrega: 20/06/2025
 Numero de comision: 5600
 Numero de grupo: 16
 Nombre de la materia: Bases de Datos Aplicadas
@@ -125,7 +128,7 @@ BEGIN
 		nombre varchar(50) not null,
 		apellido varchar(50) not null,
 		dni int not null unique check (dni between 1000000 and 99999999),
-		email varchar(100) null check (email like '_%@_%._%'), --verifica que: tenga al menos un carÃ¡cter antes de la @ / Tenga al menos un carÃ¡cter entre la @ y el . / Tenga al menos un carÃ¡cter despuÃ©s del .
+		email varchar(100) null check (email like '_%@_%._%'), --verifica que: tenga al menos un carácter antes de la @ / Tenga al menos un carácter entre la @ y el . / Tenga al menos un carácter después del .
 		fecha_nac date not null check (fecha_nac >= '1900-01-01' and fecha_nac <= GETDATE()), --que sea mayor a 1900 y menor que fecha actual
 		telefono varchar(20) check (telefono like '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'), --verifica que sea formato xx-xxxxxxxx
 		tel_contacto varchar(20) check (tel_contacto like '[0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]'), --verifica que sea formato xx-xxxxxxxx,
@@ -181,8 +184,8 @@ IF NOT EXISTS (
 )
 CREATE TABLE finanzas.TarifasAcceso (
     id INT IDENTITY PRIMARY KEY,
-    concepto VARCHAR(30) NOT NULL,      --'Valor del dÃ­a', 'Valor de temporada', 'Valor del Mes'
-    grupo_edad VARCHAR(30) NOT NULL,    -- 'Adultos', 'Menores de 12 aÃ±os'
+    concepto VARCHAR(30) NOT NULL,      --'Valor del día', 'Valor de temporada', 'Valor del Mes'
+    grupo_edad VARCHAR(30) NOT NULL,    -- 'Adultos', 'Menores de 12 años'
     valor_socio float NULL,				-- Socio , Invitado
     valor_invitado FLOAT null,        
     fecha_vigencia DATE NOT NULL,
@@ -357,7 +360,7 @@ BEGIN
 		id_metodo_pago int,
 		fecha date not null,
 		valor float not null,
-		es_reembolso bit default 0,
+		reembolsado bit default 0,
 		primary key (id, id_factura, id_metodo_pago),
 		foreign key (id_factura) references finanzas.Factura (numero_factura),
 		foreign key (id_cuota, id_socio) references finanzas.Cuota(id, id_socio),
@@ -381,6 +384,3 @@ begin
 		foreign key (id_factura) references finanzas.Factura(numero_factura),
 	);
 end
-
-
-

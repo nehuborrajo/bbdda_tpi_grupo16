@@ -45,6 +45,23 @@ go
 
 -- TESTING
 
+--IMPORTS
+
+-- Importo membresias, actividades y tarifas de acceso
+exec sp.importar_valores_membresia	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+exec sp.importar_valores_actividad	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+exec sp.importar_tarifas_acceso		@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+
+-- Importo socios responsables
+exec sp.importar_responsables_pago	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+
+-- Importo menores (grupo familiar)
+exec sp.importar_grupo_familiar		@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+
+-- Importo pagos
+exec sp.importar_pago_cuotas		@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+
+
 -- MEMBRESIAS --
 --Admite (nombre, valor)
 --No admite duplicados por nombre
@@ -186,7 +203,7 @@ exec sp.EliminarInvitado 34561238
 --No admite duplicados dentro de la tabla socios. Si se inscribe un invitado, se borrara de la tabla Invitado
 
 --Primera prueba, insertamos algunos
-exec sp.InsertarSocio 'Nehuen', 'Borrajo', 45581523, 'nehuborrajo004@gmail.com', '2004-03-04','11-31928843', '11-31928843', 'Swiss Medical', '0800-555-444' --fecha formato 'AAAA-MM-DD'
+exec sp.InsertarSocio 4121, 'Nehuen', 'Borrajo', 45581523, 'nehuborrajo004@gmail.com', '2004-03-04','11-31928843', '11-31928843', 'Swiss Medical', '0800-555-444' --fecha formato 'AAAA-MM-DD'
 exec sp.InsertarSocio 'Lionel', 'Messi', 32456893, 'messi@gmail.com', '1985-06-19','11-24153689', NULL, NULL, NULL --fecha formato 'AAAA-MM-DD'
 exec sp.InsertarSocio 'Cristiano', 'Ronaldo', 30245789, 'cristiano@gmail.com', '1983-03-23','11-24178956', NULL, 'Galeno Oro', '0800-500-200' --fecha formato 'AAAA-MM-DD'
 

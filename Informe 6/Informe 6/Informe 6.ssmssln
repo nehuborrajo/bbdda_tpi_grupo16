@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# SQL Server Management Studio Solution File, Format Version 20.00
+VisualStudioVersion = 15.0.28307.421
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{4F2E2C19-372F-40D8-9FA7-9D2138C6997A}") = "Informe 6", "Informe 6\Informe 6.ssmssqlproj", "{E5714F56-ABD4-4FAC-A6BF-11699A844C08}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Default|Default = Default|Default
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E5714F56-ABD4-4FAC-A6BF-11699A844C08}.Default|Default.ActiveCfg = Default
+		{F74BE6FC-7404-4A90-A1DD-1CA5CD77C012}.Default|Default.ActiveCfg = Default
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F6EE6A82-0C21-486E-B64D-E3333F93B12A}
+	EndGlobalSection
+EndGlobal
