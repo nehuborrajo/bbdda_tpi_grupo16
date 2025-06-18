@@ -675,7 +675,7 @@ aparezca "Microsoft.ACE.OLEDB.12.0" y "Microsoft.ACE.OLEDB.16.0"
 y luego para verificar si se me instalo el motor uso:
 EXEC sp_MSset_oledb_prop 'Microsoft.ACE.OLEDB.16.0', N'AllowInProcess', 1;
 EXEC sp_MSset_oledb_prop 'Microsoft.ACE.OLEDB.16.0', N'DynamicParameters', 1;
-
+*/
 --------------------------------------------------------------------------
 --Importar resopinsables de pago
         
