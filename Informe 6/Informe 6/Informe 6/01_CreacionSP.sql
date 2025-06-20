@@ -28,8 +28,6 @@ Nombre de la materia: Bases de Datos Aplicadas
 
 Integrantes:
 	Borrajo, Nehuen (DNI 45581523)
-	Ferro, Nicolas Ariel (DNI 40971610)
-	Lopez, Leandro Nahuel (DNI 40745048)
 	Zacarias, Franco Hernan (DNI 46422064)
 */
 
@@ -65,7 +63,7 @@ begin
 	join finanzas.Factura f  on f.numero_factura = m.id_factura
 	group by numero_socio
 	having count(*) > 0 )
-	select fm.numero_socio, s.nombre, s.apellido, c.periodo, f.fecha_emision,dense_rank() over(order by facturas_vencidas desc) as Ranking 
+	select @fecha_ini as fecha_inicial, @fecha_fin as fecha_final,fm.numero_socio, s.nombre, s.apellido, c.periodo as mes_incumplido ,dense_rank() over(order by facturas_vencidas desc) as Ranking 
 	from FacturasVencidasMorosos fm
 	join socios.Socio s on s.numero_socio = fm.numero_socio
 	join finanzas.Cuota c on c.id_socio = fm.numero_socio 
@@ -139,7 +137,7 @@ create or alter procedure sp.VerSociosSinAsistencias
 as
 begin
 	
-	select s.numero_socio, s.nombre, s.apellido, 
+	select s.nombre, s.apellido, 
 		DATEDIFF(YEAR, s.fecha_nac, GETDATE()) 
 		- CASE 
 			WHEN MONTH(s.fecha_nac) > MONTH(GETDATE()) 

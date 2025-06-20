@@ -28,8 +28,6 @@ Nombre de la materia: Bases de Datos Aplicadas
 
 Integrantes:
 	Borrajo, Nehuen (DNI 45581523)
-	Ferro, Nicolas Ariel (DNI 40971610)
-	Lopez, Leandro Nahuel (DNI 40745048)
 	Zacarias, Franco Hernan (DNI 46422064)
 */
 

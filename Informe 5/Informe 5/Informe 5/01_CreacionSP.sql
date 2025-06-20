@@ -526,7 +526,7 @@ end
 
 --SP para importar OpenMeteo 2024
 go
-create or alter procedure sp.ImportarMeteo24
+create or alter procedure sp.ImportarMeteo24 (@ruta_excel varchar(260))
 as
 begin	
 	IF OBJECT_ID('tempdb..#climaTemp') IS NOT NULL
@@ -542,16 +542,15 @@ begin
 	);--drop table #climaTemp
 
 	-- Importo el archivo CSV, omitiendo las 4 primeras filas
+	DECLARE @sql NVARCHAR(MAX) = '
 	BULK INSERT #climaTemp
-	--FROM 'C:\Users\I759578\Documents\Importar\open-meteo-buenosaires_2024.csv'
-	FROM 'C:\Users\I759578\Documents\TPI-2025-1C\open-meteo-buenosaires_2024.csv'
+	FROM ''' + @ruta_excel + '''
 	WITH (
-		FIRSTROW = 4,                  -- Salta las 4 primeras filas (no cuenta la vacia)
-		FIELDTERMINATOR = ',',
-		ROWTERMINATOR = '\n',
-		CODEPAGE = '65001',
-		MAXERRORS = 1000
-	);
+		FIELDTERMINATOR = '','',
+		ROWTERMINATOR = ''\n'',
+		FIRSTROW = 4
+	);'
+	EXEC sp_executesql @sql;
 
 	--casteo la columna viento, sacando los ';'
 	UPDATE #climaTemp
@@ -592,7 +591,7 @@ end
 
 --SP para importar OpenMeteo 2025
 go
-create or alter procedure sp.ImportarMeteo25
+create or alter procedure sp.ImportarMeteo25 (@ruta_excel varchar(260))
 as
 begin
 	IF OBJECT_ID('tempdb..#climaTemp') IS NOT NULL
@@ -608,17 +607,17 @@ begin
 	);--drop table #climaTemp
 
 	-- Importo el archivo CSV, omitiendo las 4 primeras filas
+	DECLARE @sql NVARCHAR(MAX) = '
 	BULK INSERT #climaTemp
-	--FROM 'C:\Users\I759578\Documents\Importar\open-meteo-buenosaires_2024.csv'
-	FROM 'C:\Users\I759578\Documents\TPI-2025-1C\open-meteo-buenosaires_2025.csv'
+	FROM ''' + @ruta_excel + '''
 	WITH (
-		FIRSTROW = 4,                  -- Salta las 4 primeras filas (no cuenta la vacia)
-		FIELDTERMINATOR = ',',
-		ROWTERMINATOR = '\n',
-		CODEPAGE = '65001',
-		MAXERRORS = 1000
-	);
-
+		FIELDTERMINATOR = '','',
+		ROWTERMINATOR = ''\n'',
+		FIRSTROW = 4
+	);'
+	EXEC sp_executesql @sql;
+	
+	
 	--casteo la columna viento, sacando los ';'
 	UPDATE #climaTemp
 	SET viento_kmh = 
@@ -1323,6 +1322,8 @@ begin
 		while @i <= @fila_max
 		begin
 			select @actividad = nombre_activ, @valor = valor, @fecha_vig = fecha_vig from #ValoresActTempOrdenados where fila = @i
+			if (@actividad like 'Ajed%')
+				set @actividad = 'Ajedrez'
 			if exists (select 1 from eventos.Actividad where nombre = @actividad)
 			begin
 				update eventos.Actividad

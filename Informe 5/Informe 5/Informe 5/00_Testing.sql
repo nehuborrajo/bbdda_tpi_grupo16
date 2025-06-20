@@ -71,19 +71,19 @@ EXEC sp_MSset_oledb_prop 'Microsoft.ACE.OLEDB.16.0', N'DynamicParameters', 1;
 -- Notar que en ningun caso se duplican filas al importar nuevamente
 
 -- Importo archivos de meteorologia
-exec sp.ImportarMeteo24
-exec sp.ImportarMeteo25
+exec sp.ImportarMeteo24				@ruta_excel = N'C:\TPI-2025-1C\open-meteo-buenosaires_2024.csv';
+exec sp.ImportarMeteo25				@ruta_excel = N'C:\TPI-2025-1C\open-meteo-buenosaires_2025.csv';
 
 select * from eventos.Clima
 
 -- Importo membresias, actividades y tarifas de acceso
-exec sp.importar_valores_membresia	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+exec sp.importar_valores_membresia	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C';
 select * from socios.Membresia
 
-exec sp.importar_valores_actividad	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+exec sp.importar_valores_actividad	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C';
 select * from eventos.Actividad
 
-exec sp.importar_tarifas_acceso		@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+exec sp.importar_tarifas_acceso		@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C';
 select * from finanzas.TarifasAcceso
 
 -- Importo socios responsables
@@ -105,6 +105,7 @@ exec sp.importar_pago_cuotas		@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD I
 select * from finanzas.Pago
 
 -- Importo presentismo de las clases
+-- Se maneja la validacion del tipo de presentismo
 
 exec sp.importar_presentismo_actividades	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
 select * from eventos.Clase
