@@ -129,14 +129,17 @@ BEGIN
 		es_menor bit not null default 0,
 		es_responsable bit not null default 0,
 		responsable_y_socio bit not null default 0,
+		es_empleado bit not null default 0,
 		parentesco varchar(15),
 		id_responsable int references socios.Socio(numero_socio),
 		membresia_id int references socios.Membresia(id),
 		usuario_id int references socios.Usuario(id),
 		saldo_a_favor float default 0,
+		dni_cifrado VARBINARY(256),
+		email_cifrado VARBINARY(256),
+		telefono_cifrado VARBINARY(256)
 	);
 END;
-
 
 --drop table socios.Socio
 ------------------------------------------------------------------------------

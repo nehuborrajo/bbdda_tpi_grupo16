@@ -38,33 +38,41 @@ Integrantes:
 use Com5600G16
 go
 
---CREO ESQUEMAS PARA SP
-
-IF NOT EXISTS (
-    SELECT * FROM sys.schemas WHERE name = 'sp'
-)
-BEGIN
-    EXEC('CREATE SCHEMA sp');
-END;
-
 
 -- CREACION DE ROLES --
 
 -- Tesorería
-CREATE ROLE JefeTesoreria;
-CREATE ROLE AdministrativoCobranzas;
-CREATE ROLE AdministrativoMorosidad;
-CREATE ROLE AdministrativoFacturacion;
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'JefeTesoreria')
+    CREATE ROLE JefeTesoreria;
+
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'AdministrativoCobranzas')
+    CREATE ROLE AdministrativoCobranzas;
+
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'AdministrativoMorosidad')
+    CREATE ROLE AdministrativoMorosidad;
+
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'AdministrativoFacturacion')
+    CREATE ROLE AdministrativoFacturacion;
 
 -- Socios
-CREATE ROLE AdministrativoSocio;
-CREATE ROLE SociosWeb;
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'AdministrativoSocio')
+    CREATE ROLE AdministrativoSocio;
+
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'SociosWeb')
+    CREATE ROLE SociosWeb;
 
 -- Autoridades
-CREATE ROLE Presidente;
-CREATE ROLE Vicepresidente;
-CREATE ROLE Secretario;
-CREATE ROLE Vocales;
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'Presidente')
+    CREATE ROLE Presidente;
+
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'Vicepresidente')
+    CREATE ROLE Vicepresidente;
+
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'Secretario')
+    CREATE ROLE Secretario;
+
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'Vocales')
+    CREATE ROLE Vocales;
 
 
 -- ASIGNACION DE ROLES --
@@ -106,7 +114,7 @@ GRANT SELECT, INSERT, UPDATE ON eventos.Reserva TO AdministrativoSocio;
 -- Roles SociosWeb
 GRANT SELECT ON socios.Socio TO SociosWeb;
 GRANT SELECT ON finanzas.Cuota TO SociosWeb;
-GRANT SELECT ON socios.Pago TO SociosWeb;
+GRANT SELECT ON finanzas.Pago TO SociosWeb;
 GRANT SELECT ON eventos.SocioActividad TO SociosWeb;
 
 -- Autoridades
@@ -132,80 +140,31 @@ GRANT SELECT ON SCHEMA::eventos TO Vocales;
 GRANT SELECT ON SCHEMA::finanzas TO Vocales;
 
 
-
 -- ENCRIPTACION DE DATOS --
 
 -- creo clave maestra
+IF NOT EXISTS (
+    SELECT * FROM sys.symmetric_keys 
+    WHERE name = '##MS_DatabaseMasterKey##'
+)
 CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'TuPasswordFuerte123!';
 GO
 
 -- creo certificado
+IF NOT EXISTS (
+    SELECT * FROM sys.certificates 
+    WHERE name = 'CertEmpleados'
+)
 CREATE CERTIFICATE CertEmpleados
 WITH SUBJECT = 'Certificado para datos sensibles';
 GO
 
 -- creo clave simetrica
-CREATE SYMMETRIC KEY ClaveSocio
+IF NOT EXISTS (
+    SELECT * FROM sys.symmetric_keys 
+    WHERE name = 'ClaveEmpleados'
+)
+CREATE SYMMETRIC KEY ClaveEmpleados
 WITH ALGORITHM = AES_256
 ENCRYPTION BY CERTIFICATE CertEmpleados;
 GO
-
-
---CREACION DE SP's--
-
-/*
-alter table socios.Socio
-add dni_cifrado VARBINARY(256);
-alter table socios.Socio
-add email_cifrado VARBINARY(256);
-alter table socios.Socio
-add telefono_cifrado VARBINARY(256);
-*/
-
--- sp para cifrar el dni, email y telefono de los empleados de la tabla Socio
-go
-create or alter procedure sp.EncriptarDatosEmpleados
-as
-begin
-	
-	OPEN SYMMETRIC KEY ClaveSocio DECRYPTION BY CERTIFICATE CertEmpleados;
-
-	UPDATE s
-	set
-		email_cifrado = EncryptByKey(Key_GUID('ClaveSocio'), email),
-		dni_cifrado = EncryptByKey(Key_GUID('ClaveSocio'), CAST(dni AS VARCHAR)),
-		telefono_cifrado = EncryptByKey(Key_GUID('ClaveSocio'), telefono)
-	FROM socios.Socio s
-	JOIN socios.Usuario u ON s.usuario_id = u.id
-	WHERE u.rol = 'Administrador';
-
-	CLOSE SYMMETRIC KEY ClaveSocio;
-
-end
-
------------------------------------------------------------------------------------------
-
--- sp para desencriptar los datos
-
-go
-create or alter procedure sp.DesencriptarDatosEmpleados
-as
-begin
-	
-	OPEN SYMMETRIC KEY ClaveSocio DECRYPTION BY CERTIFICATE CertEmpleados;
-
-	SELECT 
-		s.numero_socio,
-		s.nombre,
-		s.apellido,
-		CONVERT(varchar(100), DecryptByKey(s.email_cifrado)) AS email,
-		CONVERT(int, DecryptByKey(s.dni_cifrado)) AS dni,
-		CONVERT(varchar(20), DecryptByKey(s.telefono_cifrado)) AS telefono,
-		u.rol
-	FROM socios.Socio s
-	JOIN socios.Usuario u ON s.usuario_id = u.id
-	WHERE u.rol = 'Administrador';
-
-	CLOSE SYMMETRIC KEY ClaveSocio;
-
-end

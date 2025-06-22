@@ -38,10 +38,38 @@ Integrantes:
 use Com5600G16
 go
 
+-- TESTING
+
+-- Comenzamos insertando empleados 
+
+exec sp.InsertarEmpleado 'Lionel', 'Messi', 20156478, 'messi@gmail.com', '2020-04-03', '11-22554488'
+exec sp.InsertarEmpleado 'Pipi', 'Romagnoli', 27541235, 'pipi@gmail.com', '2020-04-03', '11-33224468'
+
 select * from socios.Socio
-select * from socios.Usuario
-update socios.Usuario
-set rol = 'Administrador' where id = 1
+
+-- Ahora puedo encriptar los datos de todos los empleados (chequea aquellos que tienen un usuario con rol 'Administrador' --> Empleado)
+-- Completara las columnas de email_cifrado, dni_cifrado y telefono_cifrado
 
 exec sp.EncriptarDatosEmpleados
-exec sp.DesencriptarDatosEmpleados
+
+select * from socios.Socio
+
+-- Ahora podes ver desencriptados los datos de todos los empleados
+
+exec sp.VerDesencriptaDatosEmpleados
+
+-- O podes verlo desencriptado por dni
+
+exec sp.VerDesencriptadoDatosEmpleado 20156478
+
+-- Si seleccionas un DNI no existente devuelve error
+
+exec sp.VerDesencriptadoDatosEmpleado 30156478
+
+
+-- Tambien podes directamente insertar un empleado ya cifrado
+
+exec sp.InsertarEmpleadoEncriptado 'Nehuen', 'Borrajo', 55581523, 'nehu@gmail.com', '2020-04-03', '11-33224568'
+
+select * from socios.Socio
+
