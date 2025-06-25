@@ -67,12 +67,12 @@ exec sp.importar_pago_cuotas		@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD I
 --No admite duplicados por nombre
 
 --Primer prueba, ingresamos las 3
-exec sp.InsertarMembresia 'Menor', 20500
-exec sp.InsertarMembresia 'Cadete', 25000
-exec sp.InsertarMembresia 'Mayor', 30000
+exec sp.InsertarMembresia 'Menor', 20500, '2026-06-26'
+exec sp.InsertarMembresia 'Cadete', 25000, '2026-06-26'
+exec sp.InsertarMembresia 'Mayor', 30000, '2026-06-26'
 
 --Al intentar ingresar una de ellas nuevamente, dira que ya existe y no se podra generar
-exec sp.InsertarMembresia 'Menor', 20500
+exec sp.InsertarMembresia 'Menor', 20500, '2026-06-26'
 
 --Ahora probamos modificar sus valores
 --Admite (ID y nuevo valor)
@@ -95,7 +95,7 @@ exec sp.EliminarMembresia 1
 exec sp.EliminarMembresia 5
 
 --Volvemos a insertar 'Menor'
-exec sp.InsertarMembresia 'Menor', 20500
+exec sp.InsertarMembresia 'Menor', 20500, '2026-06-26'
 
 
 -- ACTIVIDADES --
@@ -104,13 +104,13 @@ exec sp.InsertarMembresia 'Menor', 20500
 --No admite duplicado por nombre
 
 --Primer prueba, ingresamos algunas
-exec sp.InsertarActividad 'Futbol', 7000
-exec sp.InsertarActividad 'Futsal', 5600
-exec sp.InsertarActividad 'Pileta', 10000
-exec sp.InsertarActividad 'Pileta Invitado', 15000
+exec sp.InsertarActividad 'Futbol', 7000, '2026-06-26'
+exec sp.InsertarActividad 'Futsal', 5600, '2026-06-26'
+exec sp.InsertarActividad 'Pileta', 10000, '2026-06-26'
+exec sp.InsertarActividad 'Pileta Invitado', 15000, '2026-06-26'
 
 --Si intento ingresar una de ellas nuevamente dara error
-exec sp.InsertarActividad 'Futbol', 7000
+exec sp.InsertarActividad 'Futbol', 7000, '2026-06-26'
 
 --Ahora probamos con modificar sus valores
 --Admite (ID, valor)
@@ -134,7 +134,7 @@ exec sp.EliminarActividad 5
 
 
 --Vuelvo a insertar futbol
-exec sp.InsertarActividad 'Futbol', 7000
+exec sp.InsertarActividad 'Futbol', 7000, '2026-06-26'
 
 
 -- METODOS DE PAGO --
@@ -181,7 +181,9 @@ exec sp.EliminarMetodoPago 6
 --Primera prueba, insertamos algunos
 exec sp.CrearInvitado 'Iker', 'Muniain', 95478123, '11-54781265'
 exec sp.CrearInvitado 'Andres', 'Vombergar', 34561238, '11-31928843'
-exec sp.CrearInvitado 'Miguel Angel', 'Russo', 15647896, '11-44752526'
+exec sp.CrearInvitado 'Johan', 'Romaña', 15647896, '11-44752526'
+
+select * from eventos.Invitado
 
 --Si ingresamos un DNI nuevamente dara error (lo mismo si incluyeramos el DNI de un socio registrado)
 exec sp.CrearInvitado 'Malcom', 'Braida', 15647896, '11-54896321'
@@ -190,10 +192,10 @@ exec sp.CrearInvitado 'Malcom', 'Braida', 15647896, '11-54896321'
 --Ahora probamos eliminandolos
 --Admite (dni)
 --Vamos con un llamado valido
-exec sp.EliminarInvitado 34561238
+exec sp.EliminarInvitado 15647896
 
 --Dara error si el dni no pertenece a ningun invitado registrado
-exec sp.EliminarInvitado 34561238
+exec sp.EliminarInvitado 15647896
 
 
 
@@ -203,7 +205,7 @@ exec sp.EliminarInvitado 34561238
 --No admite duplicados dentro de la tabla socios. Si se inscribe un invitado, se borrara de la tabla Invitado
 
 --Primera prueba, insertamos algunos
-exec sp.InsertarSocio 4121, 'Nehuen', 'Borrajo', 45581523, 'nehuborrajo004@gmail.com', '2004-03-04','11-31928843', '11-31928843', 'Swiss Medical', '0800-555-444' --fecha formato 'AAAA-MM-DD'
+exec sp.InsertarSocio 'Nehuen', 'Borrajo', 45581523, 'nehuborrajo004@gmail.com', '2004-03-04','11-31928843', '11-31928843', 'Swiss Medical', '0800-555-444' --fecha formato 'AAAA-MM-DD'
 exec sp.InsertarSocio 'Lionel', 'Messi', 32456893, 'messi@gmail.com', '1985-06-19','11-24153689', NULL, NULL, NULL --fecha formato 'AAAA-MM-DD'
 exec sp.InsertarSocio 'Cristiano', 'Ronaldo', 30245789, 'cristiano@gmail.com', '1983-03-23','11-24178956', NULL, 'Galeno Oro', '0800-500-200' --fecha formato 'AAAA-MM-DD'
 
@@ -252,11 +254,11 @@ exec sp.EliminarSocio 30245789
 --Veriica que la edad del menor sea realmente -18 y que no se encuentre su dni en el sistema
 
 --Probamos insertando algunos
-exec sp.InsertarSocioFamiliar 'Andrea', 'Vazquez', 26372890, 'andre@gmail.com', '1977-08-28','11-31928843', 'Madre', 'Diamela', 'Franco', 44689742, '2015-05-31', NULL, NULL
+exec sp.InsertarSocioFamiliar 'Andrea', 'Vazquez', 26372890, 'andre@gmail.com', '1977-08-28','11-31928843', 'Madre', 'Diamela', 'Franco', 44689745, '2015-05-31', NULL, NULL
 exec sp.InsertarSocioFamiliar 'Andrea', 'Vazquez', 26372890, 'andre@gmail.com', '1977-08-28','11-31928843', 'Madre', 'Andres', 'Franco', 43215698, '2015-05-31', NULL, NULL
 exec sp.InsertarSocioFamiliar 'Lionel', 'Messi', 32456893, 'messi@gmail.com', '1985-06-19','11-24153689', 'Padre', 'Thiago', 'Messi', 51247896, '2015-05-31', NULL, NULL
 exec sp.InsertarSocioFamiliar 'Lionel', 'Messi', 32456893, 'messi@gmail.com', '1985-06-19','11-24153689', 'Padre', 'Ciro', 'Messi', 53214875, '2015-05-31', NULL, NULL
-
+select * from socios.Socio
 
 --A los menores les activa automaticamente el campo es_menor, mientras que a los responsables el campo es_responsable
 --Si el responsable ya estaba inscripto como socio, le activa el socio_y_responsable
@@ -275,10 +277,10 @@ exec sp.AsociarResponsable 40000000
 --Tambien podemos desasociar responsables (que necesitan seguir estando activos porque son responsables de otro/s menor/es)
 --Admite (dni)
 --Vamos con un caso valido
-exec sp.DesasociarResponsable 32456893
+exec sp.DesasociarResponsable 26372890
 
 --Si el DNI pertenece a alguien ya desasociado dara error
-exec sp.DesasociarResponsable 32456893
+exec sp.DesasociarResponsable 26372890
 --o si el DNI es inexistente
 exec sp.DesasociarResponsable 40000000
 
@@ -339,7 +341,7 @@ exec sp.ActualizarContraseniaUsuario 32456893, 'Goat'
 --Admite (dni, id_actividad)
 
 --Vamos con algunos casos validos
-exec sp.AsociarResponsable 32456893
+exec sp.AsociarResponsable 26372890
 exec sp.ActivarSocio 45581523
 exec sp.InscribirSocioActividad 45581523, 5
 exec sp.InscribirSocioActividad 45581523, 2
@@ -384,6 +386,8 @@ exec sp.InscribirSocioActividad 45581523, 5
 --Admite (dni_socio, dni_invitado, id_actividad, fecha, llovio), donde llovio es 0=NO / 1=SI
 exec sp.CrearReserva 45581523, NULL, 3, '2025-05-23', 0
 exec sp.CrearReserva 45581523, 95478123, 3, '2025-05-23', 1
+select * from eventos.Reserva
+select * from finanzas.Factura
 --Gracias a este ultimo ejemplo, se genero un pago a cuentas para el socio y el invitado, debido a que llovio
 
 --Fallara si se indica un invitado y la actividad no es la pileta
@@ -427,24 +431,19 @@ exec sp.GenerarCuotaSocio 32456893, '05-2025'
 
 --Tambien se pueden eliminar cuotas (idealmente el uso es para cuotas que no hayan registrado pagos)
 --Admite (id_cuota)
-
+select * from finanzas.Cuota
 --Probamos un caso valido
-exec sp.EliminarCuota 1
+exec sp.EliminarCuota 1417
 
 --Fallara si la cuota no existe
-exec sp.EliminarCuota 11
+exec sp.EliminarCuota 1500
 
 select * from finanzas.Cuota
 
 -- FACTURAS --
 --Cada cuota genera una factura asociada
 --sp.GenerarFacturaCuota
---Su proposito es de uso interno en el sp.GenerarCuotaSocio, sin embargo se lo puede invocar indicando el id de la cuota
-
---Fallara si la cuota no existe
-exec sp.GenerarFacturaCuota 111
---O si la cuota ya tiene una factura asociada
-exec sp.GenerarFacturaCuota 2
+--Su proposito es de uso interno en el sp.GenerarCuotaSocio
 
 --En el caso de las reservas, existe sp.GenerarFacturaReserva
 --Admite (id_socio, id_invitado, fecha, valor, valor_invitado, id_reserva)
@@ -453,7 +452,7 @@ exec sp.GenerarFacturaCuota 2
 --Tambien se puede eliminar una factura
 --Admite (id_factura)
 --Probamos un caso valido
-exec sp.EliminarFactura 2
+exec sp.EliminarFactura 1438
 
 --Fallara si el ID no esta asociado a ninguna cuota
 exec sp.EliminarFactura 0
@@ -469,7 +468,7 @@ select * from finanzas.Factura
 --Para pagos de cuota
 --Admite (dni, id_factura, id_metodo_pago)
 --Probamos un caso valido
-exec sp.GenerarPagoFacturaCuota 45581523, 5, 3
+exec sp.GenerarPagoFacturaCuota 45581523, 5, 1
 
 --Dara error si el dni no pertenece a un socio existente/activo
 exec sp.GenerarPagoFacturaCuota 45501523, 5, 3
@@ -478,7 +477,7 @@ exec sp.GenerarPagoFacturaCuota 45581523, 10, 3
 --Si el metodo de pago no existe
 exec sp.GenerarPagoFacturaCuota 45581523, 5, 10
 --O si la factura ya se encuentra paga
-exec sp.GenerarPagoFacturaCuota 45581523, 5, 3
+exec sp.GenerarPagoFacturaCuota 45581523, 5, 1
 
 
 --Luego tenemos para generar pagos de las facturas asociadas a reservas
@@ -527,8 +526,6 @@ select * from finanzas.Pago
 
 exec sp.GenerarCuotaSocio 45581523, '05-2025'
 exec sp.GenerarPagoFacturaCuota 45581523, 7, 3
-exec sp.PagoACuentasPago 6
-
 --Puede fallar si el pago no existe
 exec sp.PagoACuentasPago 15
 --O si ya se encuentra reembolsado
@@ -536,11 +533,8 @@ exec sp.PagoACuentasPago 6
 
 
 --Actualizar valores de facturas vencidas
-exec sp.ActualizarFacturas
+exec sp.ActualizarFacturas '2026-02-01'
 
 --Desactivar socios morosos
 exec sp.DesactivarSociosMorosos
 
-exec sp.ImportarMeteo24
-
-select * from eventos.Clima

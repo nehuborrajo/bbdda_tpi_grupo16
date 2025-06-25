@@ -114,7 +114,7 @@ select * from eventos.Clase
 -- Primero generamos morosos
 update finanzas.Factura
 set estado = 'Vencida 2'
-where fecha_vencimiento_dos = '2024-01-15' and fecha_vencimiento_dos = '2024-02-16'
+where fecha_vencimiento_dos in('2024-01-15', '2024-02-16')
 
 -- Compruebo que las facturas mencionadas ahora figuran como vencidas en segunda ocasion
 select * from finanzas.Factura

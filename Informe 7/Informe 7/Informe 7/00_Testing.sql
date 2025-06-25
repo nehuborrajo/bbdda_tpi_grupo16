@@ -31,8 +31,8 @@ go
 
 -- Comenzamos insertando empleados 
 
-exec sp.InsertarEmpleado 'Lionel', 'Messi', 20156478, 'messi@gmail.com', '2020-04-03', '11-22554488'
-exec sp.InsertarEmpleado 'Pipi', 'Romagnoli', 27541235, 'pipi@gmail.com', '2020-04-03', '11-33224468'
+exec sp.InsertarEmpleado 'Lionel', 'Messi', 99999999, 'messi@gmail.com', '2020-04-03', '11-22554488'
+exec sp.InsertarEmpleado 'Pipi', 'Romagnoli', 99999998, 'pipi@gmail.com', '2020-04-03', '11-33224468'
 
 select * from socios.Socio
 
@@ -49,7 +49,7 @@ exec sp.VerDesencriptaDatosEmpleados
 
 -- O podes verlo desencriptado por dni
 
-exec sp.VerDesencriptadoDatosEmpleado 20156478
+exec sp.VerDesencriptadoDatosEmpleado 99999999
 
 -- Si seleccionas un DNI no existente devuelve error
 
@@ -58,7 +58,7 @@ exec sp.VerDesencriptadoDatosEmpleado 30156478
 
 -- Tambien podes directamente insertar un empleado ya cifrado
 
-exec sp.InsertarEmpleadoEncriptado 'Nehuen', 'Borrajo', 55581523, 'nehu@gmail.com', '2020-04-03', '11-33224568'
+exec sp.InsertarEmpleadoEncriptado 'Nehuen', 'Borrajo', 55581525, 'nehu@gmail.com', '2020-04-03', '11-33224568'
 
 select * from socios.Socio
 

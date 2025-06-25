@@ -328,6 +328,8 @@ BEGIN
 	);
 END;
 
+ALTER TABLE finanzas.Factura
+ALTER COLUMN origen VARCHAR(20) NULL;
 ------------------------------------------------------------------------------
 
 IF NOT EXISTS (
