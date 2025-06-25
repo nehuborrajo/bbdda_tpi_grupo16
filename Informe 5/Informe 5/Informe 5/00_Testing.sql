@@ -77,36 +77,36 @@ exec sp.ImportarMeteo25				@ruta_excel = N'C:\TPI-2025-1C\open-meteo-buenosaires
 select * from eventos.Clima
 
 -- Importo membresias, actividades y tarifas de acceso
-exec sp.importar_valores_membresia	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C';
+exec sp.importar_valores_membresia	@ruta_excel = N'C:\TPI-2025-1C\Datos socios.xlsx';
 select * from socios.Membresia
 
-exec sp.importar_valores_actividad	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C';
+exec sp.importar_valores_actividad	@ruta_excel = N'C:\TPI-2025-1C\Datos socios.xlsx';
 select * from eventos.Actividad
 
-exec sp.importar_tarifas_acceso		@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C';
+exec sp.importar_tarifas_acceso		@ruta_excel = N'C:\TPI-2025-1C\Datos socios.xlsx';
 select * from finanzas.TarifasAcceso
 
 -- Importo socios responsables
 -- No inserta el 4085 por DNI duplicado y el 4111 por fecha de nacimiento invalida
 
-exec sp.importar_responsables_pago	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+exec sp.importar_responsables_pago	@ruta_excel = N'C:\TPI-2025-1C\Datos socios.xlsx';
 select * from socios.Socio
 
 -- Importo menores (grupo familiar)
 -- No importa 4122, 4123, 4126, 4128 y 4131 por fecha nac invalida / ser mayor de edad
 
-exec sp.importar_grupo_familiar		@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+exec sp.importar_grupo_familiar		@ruta_excel = N'C:\TPI-2025-1C\Datos socios.xlsx';
 select * from socios.Socio where es_menor = 1
 
 -- Importo pagos
 -- No se importan aquellos pagos pertenecientes a socios no inscriptos
 
-exec sp.importar_pago_cuotas		@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+exec sp.importar_pago_cuotas		@ruta_excel = N'C:\TPI-2025-1C\Datos socios.xlsx';
 select * from finanzas.Pago
 
 -- Importo presentismo de las clases
 -- Se maneja la validacion del tipo de presentismo
 
-exec sp.importar_presentismo_actividades	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+exec sp.importar_presentismo_actividades	@ruta_excel = N'C:\TPI-2025-1C\Datos socios.xlsx';
 select * from eventos.Clase
 

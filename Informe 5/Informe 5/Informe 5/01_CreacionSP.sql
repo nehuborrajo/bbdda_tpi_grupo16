@@ -705,18 +705,18 @@ BEGIN
             telefono_emergencia_obrasocial VARCHAR(50)
         );
 
-		--declare @ruta_excel nvarchar(260) = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+		--declare @ruta_excel nvarchar(260) = N'C:\TPI-2025-1C\Datos socios.xlsx';
 	   -- 3. Construcción dinámica de OPENROWSET para importar Excel
-        DECLARE @sql NVARCHAR(MAX) = '
-            INSERT INTO #ResponsablesTemp
-            SELECT *
-            FROM OPENROWSET(
-                ''Microsoft.ACE.OLEDB.16.0'',
-                ''Excel 12.0;HDR=YES;Database=' + @ruta_excel + ''',
-                ''SELECT * FROM [Responsables de pago$]''
-            );';
-
-        EXEC sp_executesql @sql;
+		DECLARE @sql NVARCHAR(MAX);
+		SET @sql = '
+			INSERT INTO #ResponsablesTemp
+			SELECT *
+			FROM OPENROWSET(
+				''Microsoft.ACE.OLEDB.16.0'',
+				''Excel 12.0;HDR=YES; IMEX=1;Database=' + @ruta_excel + ''',
+				''SELECT * FROM [Responsables de Pago$]''
+			);';
+		EXEC sp_executesql @sql;
 
 		--select * from #ResponsablesTemp
 		---------------------------- normalizo los datos
@@ -899,14 +899,14 @@ BEGIN
     );
 
     -- 2. Importar desde Excel
-    --declare @ruta_excel nvarchar(260) = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
+    --declare @ruta_excel nvarchar(260) = N'C:\TPI-2025-1C\Datos socios.xlsx';
 	DECLARE @sql NVARCHAR(MAX);
     SET @sql = '
         INSERT INTO #GrupoFamiliarTemp
         SELECT *
         FROM OPENROWSET(
             ''Microsoft.ACE.OLEDB.16.0'',
-            ''Excel 12.0;HDR=YES; IMEX=1;Database=' + @ruta_excel + ''',
+            ''Excel 12.0 Xml;HDR=YES; IMEX=1;Database=' + REPLACE(@ruta_excel, '''', '''''') + N''',
             ''SELECT * FROM [Grupo Familiar$]''
         );';
     EXEC sp_executesql @sql;
@@ -940,7 +940,7 @@ BEGIN
 
 	-- 4. Eliminar tuplas con fecha_nacimiento NULL o mayores de 18
     DELETE FROM #GrupoFamiliarTemp WHERE fecha_nacimiento IS NULL or DATEDIFF(YEAR, fecha_nacimiento, GETDATE()) > 18;
-	select * FROM #GrupoFamiliarTemp WHERE fecha_nacimiento IS NULL or DATEDIFF(YEAR, fecha_nacimiento, GETDATE()) > 18;
+	--select * FROM #GrupoFamiliarTemp WHERE fecha_nacimiento IS NULL or DATEDIFF(YEAR, fecha_nacimiento, GETDATE()) > 18;
 
     -- 5. Eliminar duplicados en el Excel (por numero_socio)
     DELETE T
