@@ -1136,7 +1136,7 @@ BEGIN
             numero_pago				   bigint,
 			fecha					   DATETIME,
 		    numero_socio_resp		   VARCHAR(20),
-            valor                      float,
+            valor                      float,                --saar float
             medio_pago				   varchar(25)
     );
 
@@ -1605,15 +1605,3 @@ begin
 	END CATCH
 end
 
------------------------------------------------------------------------------------------
-/*
-exec sp.importar_presentismo_actividades @ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx'
-
-select * from eventos.Clase
-select * from eventos.Profesor
-select * from eventos.Actividad
-
-select * from eventos.SocioActividad
-
-delete from eventos.Clase
-*/

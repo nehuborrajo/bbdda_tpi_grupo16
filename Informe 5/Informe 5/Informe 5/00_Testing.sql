@@ -85,6 +85,7 @@ select * from eventos.Actividad
 
 exec sp.importar_tarifas_acceso		@ruta_excel = N'C:\TPI-2025-1C\Datos socios.xlsx';
 select * from finanzas.TarifasAcceso
+delete from finanzas.TarifasAcceso
 
 -- Importo socios responsables
 -- No inserta el 4085 por DNI duplicado y el 4111 por fecha de nacimiento invalida

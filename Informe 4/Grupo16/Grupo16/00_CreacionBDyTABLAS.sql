@@ -156,7 +156,7 @@ BEGIN
     create table eventos.Actividad (
 		id int identity primary key,
 		nombre varchar(30) not null,
-		costo float not null,
+		costo float not null,                             --sacar float
 		fecha_vigencia date not null
 	);
 END;
@@ -218,7 +218,7 @@ BEGIN
         id_actividad INT NOT NULL,
 		id_profesor int not null,
 		fecha date not null,
-		asistencia char(2) check (asistencia in ('P', 'A', 'J')),
+		asistencia char(2) check (asistencia in ('P', 'A', 'J')), --char
         PRIMARY KEY (id_socio, id_actividad, fecha),
         FOREIGN KEY (id_socio) REFERENCES socios.Socio(numero_socio),
         FOREIGN KEY (id_actividad) REFERENCES eventos.Actividad(id),

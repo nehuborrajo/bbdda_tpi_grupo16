@@ -29,6 +29,8 @@ go
 
 -- TESTING
 
+-- SEGURIDAD/ENCRIPTACION
+
 -- Comenzamos insertando empleados 
 
 exec sp.InsertarEmpleado 'Lionel', 'Messi', 99999999, 'messi@gmail.com', '2020-04-03', '11-22554488'

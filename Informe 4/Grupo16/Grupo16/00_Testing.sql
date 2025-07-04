@@ -45,23 +45,6 @@ go
 
 -- TESTING
 
---IMPORTS
-
--- Importo membresias, actividades y tarifas de acceso
-exec sp.importar_valores_membresia	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
-exec sp.importar_valores_actividad	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
-exec sp.importar_tarifas_acceso		@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
-
--- Importo socios responsables
-exec sp.importar_responsables_pago	@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
-
--- Importo menores (grupo familiar)
-exec sp.importar_grupo_familiar		@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
-
--- Importo pagos
-exec sp.importar_pago_cuotas		@ruta_excel = N'C:\Users\I759578\Desktop\Facu\BD II\TPI-2025-1C\Datos socios.xlsx';
-
-
 -- MEMBRESIAS --
 --Admite (nombre, valor)
 --No admite duplicados por nombre

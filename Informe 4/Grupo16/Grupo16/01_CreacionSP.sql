@@ -40,7 +40,7 @@ Integrantes:
 */
 
 --use master
-
+--camiar esquemas
 use Com5600G16
 go
 --CREO ESQUEMAS PARA SP
@@ -53,10 +53,10 @@ BEGIN
 END;
 
 --CREACION DE SP's--
-
+/*
 --SP para crear profesor
 go
-create or alter procedure sp.CrearProfesor (@nombre varchar(50))
+create or alter procedure eventos.CrearProfesor (@nombre varchar(50))
 as
 begin
 	insert into eventos.Profesor (nombre) values (@nombre)
@@ -64,7 +64,7 @@ end
 
 --SP para eliminar profesor por ID
 go
-create or alter procedure sp.EliminarProfesor (@id int)
+create or alter procedure eventos.EliminarProfesor (@id int)
 as
 begin
 	if exists (select 1 from eventos.Profesor where id = @id)
@@ -204,7 +204,7 @@ begin catch
 end catch
 end
 
---CREO SP PARA INSERTAR Grupo Familiar (Inscripcion Familiar)
+--SP PARA INSERTAR Grupo Familiar (Inscripcion Familiar)
 go
 create or alter procedure sp.InsertarSocioFamiliar (@nombre varchar(50), @apellido varchar(50), @dni int, @email varchar(40), @fecha_nac date, @telefono varchar(20), @parentesco varchar(15),
 @nombre_menor varchar(50), @apellido_menor varchar(50), @dni_menor int, @fecha_nac_menor date, @obra_social varchar(30), @num_carnet_obra_social varchar(30))
@@ -386,7 +386,7 @@ begin
 		else
 			RAISERROR('El DNI especificado no existe en el sistema o ya se encuenta activo.', 16, 1);
 end
-
+*/
 
 --SP para insertar tipos de membresias
 go
@@ -540,7 +540,7 @@ begin
 	else
 		RAISERROR('El DNI especificado no esta asociado a ningun usuario.', 16, 1);
 end
-
+/*
 --SP para anotar socio a actividad
 go
 create or alter procedure sp.InscribirSocioActividad (@dni int, @id_activ int)
@@ -797,95 +797,10 @@ begin
 	else
 		RAISERROR('El ID especificado no corresponde a una cuota.', 16, 1);
 end
+*//*
 
-
---SP para crear invitados
-go
-create or alter procedure sp.CrearInvitado (@nombre varchar(50), @apellido varchar(50), @dni int, @telefono varchar(20))
-as
-begin
-	if exists (select 1 from eventos.Invitado where dni = @dni) --verifica que no exista el dni registrado
-	begin
-		RAISERROR('El DNI especificado corresponde a un invitado ya registrado.', 16, 1);
-		return
-	end
-	if not exists (select 1 from socios.Socio where dni = @dni and activo = 1)
-	begin
-		insert into eventos.Invitado (nombre, apellido, dni, telefono) values(@nombre, @apellido, @dni, @telefono)
-		print 'Invitado agregado correctamente.'
-	end
-	else
-		RAISERROR('El DNI especificado corresponde a un socio activo.', 16, 1);
-end
-
-
---SP para eliminar invitados
-go
-create or alter procedure sp.EliminarInvitado (@dni int)
-as
-begin
-	if exists (select 1 from eventos.Invitado where dni = @dni)
-	begin
-		delete from eventos.Invitado where dni = @dni
-		print 'Invitado eliminado correctamente.'
-	end
-	else
-		RAISERROR('El DNI especificado no corresponde a un invitado existente.', 16, 1);
-end
-
-
---SP para crear metodos de pago
-go
-create or alter procedure sp.CrearMetodoPago (@nombre varchar(25))
-as
-begin
-	if not exists (select 1 from finanzas.MetodoPago where nombre = @nombre)
-	begin
-		insert into finanzas.MetodoPago values (@nombre)
-		print 'Metodo de pago agregado correctamente.'
-	end
-	else
-		RAISERROR('El metodo de pago ya existe.', 16, 1);
-end
-
-
-
---SP para eliminar metodos de pago por id
-go
-create or alter procedure sp.EliminarMetodoPago (@id int)
-as
-begin
-	if exists (select 1 from finanzas.MetodoPago where id = @id)
-	begin
-		delete from finanzas.MetodoPago where id = @id
-		print 'Metodo de pago eliminado correctamente.'
-	end
-	else
-		RAISERROR('El metodo de pago no existe.', 16, 1);
-end
-
---SP para modificar nombre metodos de pago por id
-go
-create or alter procedure sp.ModificarMetodoPago (@id int, @nuevo_nombre varchar(25))
-as
-begin
-	if @nuevo_nombre = ''
-	begin
-		RAISERROR('Nuevo nombre invalido.', 16, 1);
-		return
-	end
-	if exists (select 1 from finanzas.MetodoPago where id = @id)
-	begin
-		update finanzas.MetodoPago
-			set nombre = @nuevo_nombre
-			where id = @id
-			print 'Metodo de pago actualizado correctamente.'
-	end
-	else
-		RAISERROR('El metodo de pago no existe.', 16, 1);
-end
-
-
+*/
+/*
 --sp para generar factura por reserva
 go
 create or alter procedure sp.GenerarFacturaReserva (@id_socio int, @id_invitado int, @fecha date, @valor float, @valor_inv float, @id_reserva int, @llovio bit)
@@ -1026,10 +941,10 @@ begin
 		RAISERROR('El ID especificado no corresponde a ninguna factura existente.', 16, 1);
 end
 
+*/
 
 
-
-
+/*
 --sp para registrar pagos de cuotas por dni, id de factura, id met pago
 go
 create or alter procedure sp.GenerarPagoFacturaCuota (@dni int, @id_fact int, @id_metpag int)
@@ -1253,7 +1168,7 @@ begin
 
 end
 
-
+*/
 --sp para actualizar todas las facturas en caso de vencimiento segun fecha por parametro
 go
 create or alter procedure sp.ActualizarFacturas (@fecha_hoy date)
@@ -1302,147 +1217,3 @@ begin
 end
 
 
---SP para crear invitados
-go
-create or alter procedure sp.CrearInvitado (@nombre varchar(50), @apellido varchar(50), @dni int, @telefono varchar(20))
-as
-begin
-	if exists (select 1 from eventos.Invitado where dni = @dni) --verifica que no exista el dni registrado
-	begin
-		RAISERROR('El DNI especificado corresponde a un invitado ya registrado.', 16, 1);
-		return
-	end
-	if not exists (select 1 from socios.Socio where dni = @dni and activo = 1)
-	begin
-		insert into eventos.Invitado (nombre, apellido, dni, telefono) values(@nombre, @apellido, @dni, @telefono)
-		print 'Invitado agregado correctamente.'
-	end
-	else
-		RAISERROR('El DNI especificado corresponde a un socio activo.', 16, 1);
-end
-
-
---SP para eliminar invitados
-go
-create or alter procedure sp.EliminarInvitado (@dni int)
-as
-begin
-	if exists (select 1 from eventos.Invitado where dni = @dni)
-	begin
-		delete from eventos.Invitado where dni = @dni
-		print 'Invitado eliminado correctamente.'
-	end
-	else
-		RAISERROR('El DNI especificado no corresponde a un invitado existente.', 16, 1);
-end
-
-
---SP para crear metodos de pago
-go
-create or alter procedure sp.CrearMetodoPago (@nombre varchar(25))
-as
-begin
-	if not exists (select 1 from finanzas.MetodoPago where nombre = @nombre)
-	begin
-		insert into finanzas.MetodoPago values (@nombre)
-		print 'Metodo de pago agregado correctamente.'
-	end
-	else
-		RAISERROR('El metodo de pago ya existe.', 16, 1);
-end
-
-go
-create or alter procedure sp.GenerarFacturaReserva (@id_socio int, @id_invitado int, @fecha date, @valor float, @valor_inv float, @id_reserva int)
-as
-begin
-	declare @fecha_venc date
-	SET @fecha_venc = DATEADD(DAY, 5, GETDATE());
-	insert into finanzas.Factura (id_socio, id_reserva, valor, fecha_emision, fecha_vencimiento, estado, detalle) values (@id_socio, @id_reserva, @valor,GETDATE(), @fecha_venc, 'Pendiente', 'Reserva')
-
-	if @id_invitado is not null
-			insert into finanzas.Factura (id_invitado, id_reserva, valor, fecha_emision, fecha_vencimiento, estado, detalle) values (@id_invitado, @id_reserva, @valor_inv,GETDATE(), @fecha_venc, 'Pendiente', 'Reserva')
-
-end
-
---SP para generar Reserva a partir dni socio, dni invitado(op), id act, fecha y si llovio (1/0)
-go
-create or alter procedure sp.CrearReserva (@dni_socio int, @dni_invitado int, @id_act int, @fecha date, @llovio bit)
-as
-begin
-	if not exists (select 1 from socios.Socio where dni = @dni_socio and activo=1 and responsable_y_socio = 0)
-	begin
-		RAISERROR('El DNI no pertenece a un socio activo.', 16, 1);
-		return
-	end
-	if @dni_invitado is not null and not exists (select 1 from eventos.Invitado where dni = @dni_invitado)
-	begin
-		RAISERROR('El DNI no pertenece a un invitado existente.', 16, 1);
-		return
-	end
-	if not exists (select 1 from eventos.Actividad where id = @id_act)
-	begin
-		RAISERROR('La actividad especificada no existe.', 16, 1);
-		return
-	end
-	if (@dni_invitado is not null and ((select a.nombre from eventos.Actividad a where id = @id_act) <> 'Pileta'))
-	begin
-		RAISERROR('El invitado no puede acceder a otra actividad distina de la Pileta.', 16, 1);
-		return
-	end
-
-	declare @valor float
-	declare @valor_inv float
-		
-	set @valor = (select a.costo from eventos.Actividad a where id = @id_act)
-	set @valor_inv = (select a.costo from eventos.Actividad a where nombre = 'Pileta Invitado')
-
-	declare @id_socio int
-	set @id_socio = (select numero_socio from socios.Socio where dni = @dni_socio)
-
-	if @dni_socio is not null
-	begin
-		declare @id_invitado int
-		set @id_invitado = (select id from eventos.Invitado where dni = @dni_invitado)
-	end
-	else
-		set @id_invitado = @dni_socio
-	
-	declare @id_reserva int
-	print @id_socio 
-	print @id_invitado
-	print @id_act
-	insert into eventos.Reserva (id_socio, id_invitado, id_actividad, fecha, lluvia) values (@id_socio, @id_invitado, @id_act, @fecha, @llovio)
-	set @id_reserva = SCOPE_IDENTITY()
-	exec sp.GenerarFacturaReserva @id_socio, @id_invitado, @fecha, @valor, @valor_inv, @id_reserva
-	
-	
-	if @llovio = 1
-	begin
-		update socios.Socio
-		set saldo_a_favor = saldo_a_favor + (0.6 * @valor)
-		where dni = @dni_socio
-
-		if @dni_invitado is not null
-		begin
-			update eventos.Invitado
-			set saldo_a_favor = saldo_a_favor + (0.6 * @valor_inv)
-			where dni = @dni_invitado
-		end
-	end
-end
-
-
---SP para eliminar una reserva por id
-go
-create or alter procedure sp.EliminarReserva (@id_reserva int)
-as
-begin
-	if not exists (select 1 from eventos.Reserva where id = @id_reserva)
-	begin
-		RAISERROR('El ID especificado no corresponde a ninguna reserva existente.', 16, 1);
-		return
-	end
-	delete from finanzas.Factura where id_reserva = @id_reserva
-	delete from eventos.Reserva where id = @id_reserva
-	print'Reserva eliminada correctamente.'
-end
